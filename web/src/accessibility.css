@@ -1,0 +1,40 @@
+/* Readable secondary text retains the quiet palette without relying on pale contrast. */
+:root{--muted:#64745a}
+.workspace-label,.workspace-label>span,.nav-item,.sidebar-note p,.sidebar-note>span,
+.sidebar-bottom,.sidebar-bottom>a,.breadcrumb>span,.local-badge,.avatar,.eyebrow,
+.hero-description,.text-button,.hero-trust,.stat-top>span:first-child,.stat-sub,
+.section-kicker,.section-heading p,.pill,.import-panel>p,.import-hint,
+.separator-control label,.separator-control select,.demo-strip p,
+.dataset-name>span,.role-label,.settings-panel>summary,.settings-grid label,
+.settings-grid legend,.settings-grid small,.chip,.empty-report p,.segmented>button,
+.finding-title>span,.count-badge,.finding-detail small,th,td,.info-note p,.pagination,
+.panel-title,.column-card>div:first-child>span,.column-card>p,.column-stat>span,
+.column-stat>strong,.mini-bars>div>span,.mini-bars small,.sample-details summary,
+.comparison h4,.builder-body label,.builder-body legend,.builder-body select,
+.builder-body input,.recipe-empty p,.recipe-empty p span,.recipe-step strong,
+.recipe-step>div>span,.step-number,.mint-card p,.mint-card li,
+.preview-records h4,.preview-panel pre,.preview-note,.closing-note,
+footer>span:not(.brand),footer>a,.search-box input,.finding-detail>.muted{color:#617153}
+.pill{background:#f0f4e9}.avatar{color:#536744}.text-button:hover{color:#244f36}
+.hero h1 em{color:#70864c}.mint-card h3 em{color:#688248}
+.builder-body label>select{color:#536b40}.chip.selected{color:#455f30}
+.floating-label{color:#5e744b}.constellation>svg{width:100%}
+.floating-label svg{width:14px;height:14px}.label-two{min-width:185px}
+.mint-card .section-kicker{color:#576d45}
+.export-panel .section-kicker{color:#c4d6ad}
+.export-copy p,.export-tags>span,.export-controls label,.export-controls small{color:#c1d2ac}
+.export-controls select{color:#d4e3c3}
+.export-controls .acknowledge{color:#d5e4bf}
+.toast.success{color:#526c3b}.toast.error{color:#956242}
+.pill.stale{color:#866536}.failure-cell{color:#9c5d38}
+.null-cell{color:#926e38}
+footer>.brand{opacity:1}footer .brand-light{color:#526b47}
+.hero-description{font-size:13px}.section-heading p{font-size:12px}
+.stat-top>span:first-child{font-size:9px}.stat-sub{font-size:10px}
+.section-kicker{font-size:9px}.hero-trust{font-size:10px}
+.import-panel>p{font-size:12px}.import-hint{font-size:9px}
+.demo-strip p{font-size:11px}.empty-report p{font-size:12px}
+.finding-title>span{font-size:10px}.finding-detail small{font-size:11px}
+.info-note p{font-size:11px}.builder-body label,.builder-body legend{font-size:11px}
+.comparison-disclaimer{color:#617153;font-size:11px}
+@media(max-width:700px){.stat-top>span:first-child{font-size:8px}.stat-sub{font-size:9px}.hero-trust{font-size:9px}.section-kicker{font-size:8px}.hero-description{font-size:12px}.import-hint{font-size:8px}.section-heading p{font-size:11px}.empty-report p{font-size:11px}}

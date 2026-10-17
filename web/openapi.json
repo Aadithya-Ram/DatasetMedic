@@ -1,0 +1,773 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "DatasetMedic",
+    "version": "0.1.0"
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "summary": "Health",
+        "operationId": "health_api_health_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions": {
+      "post": {
+        "summary": "New Session",
+        "operationId": "new_session_api_sessions_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{sid}/heartbeat": {
+      "post": {
+        "summary": "Heartbeat",
+        "operationId": "heartbeat_api_sessions__sid__heartbeat_post",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{sid}": {
+      "delete": {
+        "summary": "Delete Session",
+        "operationId": "delete_session_api_sessions__sid__delete",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{sid}/datasets": {
+      "get": {
+        "summary": "Datasets",
+        "operationId": "datasets_api_sessions__sid__datasets_get",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{sid}/imports": {
+      "post": {
+        "summary": "Upload",
+        "operationId": "upload_api_sessions__sid__imports_post",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_api_sessions__sid__imports_post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{sid}/demo": {
+      "post": {
+        "summary": "Demo",
+        "operationId": "demo_api_sessions__sid__demo_post",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{sid}/jobs": {
+      "post": {
+        "summary": "Start Job",
+        "operationId": "start_job_api_sessions__sid__jobs_post",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JobRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{sid}/jobs/{jid}": {
+      "get": {
+        "summary": "Status",
+        "operationId": "status_api_sessions__sid__jobs__jid__get",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          },
+          {
+            "name": "jid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Jid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "summary": "Cancel",
+        "operationId": "cancel_api_sessions__sid__jobs__jid__delete",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          },
+          {
+            "name": "jid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Jid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{sid}/jobs/{jid}/result": {
+      "get": {
+        "summary": "Result",
+        "operationId": "result_api_sessions__sid__jobs__jid__result_get",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          },
+          {
+            "name": "jid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Jid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{sid}/jobs/{jid}/findings": {
+      "get": {
+        "summary": "Findings",
+        "operationId": "findings_api_sessions__sid__jobs__jid__findings_get",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          },
+          {
+            "name": "jid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Jid"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "title": "Limit"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sessions/{sid}/jobs/{jid}/download": {
+      "get": {
+        "summary": "Download",
+        "operationId": "download_api_sessions__sid__jobs__jid__download_get",
+        "parameters": [
+          {
+            "name": "sid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Sid"
+            }
+          },
+          {
+            "name": "jid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Jid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AuditConfig": {
+        "properties": {
+          "roles": {
+            "additionalProperties": {
+              "type": "string",
+              "enum": [
+                "dataset",
+                "train",
+                "validation",
+                "test"
+              ]
+            },
+            "type": "object",
+            "title": "Roles"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Target"
+          },
+          "groups": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Groups"
+          },
+          "features": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Features"
+          }
+        },
+        "type": "object",
+        "title": "AuditConfig"
+      },
+      "Body_upload_api_sessions__sid__imports_post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          },
+          "separator": {
+            "type": "string",
+            "title": "Separator",
+            "default": ","
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_api_sessions__sid__imports_post"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "JobRequest": {
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "audit",
+              "preview",
+              "export"
+            ],
+            "title": "Kind"
+          },
+          "config": {
+            "$ref": "#/components/schemas/AuditConfig"
+          },
+          "recipe": {
+            "$ref": "#/components/schemas/Recipe"
+          },
+          "output_format": {
+            "type": "string",
+            "enum": [
+              "csv",
+              "parquet"
+            ],
+            "title": "Output Format",
+            "default": "parquet"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "JobRequest"
+      },
+      "Recipe": {
+        "properties": {
+          "steps": {
+            "items": {
+              "$ref": "#/components/schemas/Step"
+            },
+            "type": "array",
+            "maxItems": 50,
+            "title": "Steps"
+          }
+        },
+        "type": "object",
+        "title": "Recipe"
+      },
+      "Step": {
+        "properties": {
+          "op": {
+            "type": "string",
+            "enum": [
+              "drop",
+              "deduplicate",
+              "trim",
+              "cast",
+              "fill"
+            ],
+            "title": "Op"
+          },
+          "columns": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Columns"
+          },
+          "dtype": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "text",
+                  "integer",
+                  "decimal",
+                  "boolean",
+                  "date"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dtype"
+          },
+          "method": {
+            "type": "string",
+            "enum": [
+              "median",
+              "mode",
+              "constant"
+            ],
+            "title": "Method",
+            "default": "median"
+          },
+          "value": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Value"
+          }
+        },
+        "type": "object",
+        "required": [
+          "op"
+        ],
+        "title": "Step"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      }
+    }
+  }
+}
