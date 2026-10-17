@@ -64,6 +64,8 @@ Preview and export use the same transformation engine. Learned fills use **only 
 
 Failed type conversions create null values and are counted in the preview. Export requires acknowledging those failures. Numeric median filling preserves fractional values, and tied modes use deterministic ordering.
 
+**New on `main`:** edit saved recipe steps or move them earlier/later without rebuilding the recipe. A changed recipe needs a fresh preview before export. These interface improvements are not yet in the v0.1.0 download; use [Build from source](#build-from-source) to try them. See the [changelog](CHANGELOG.md).
+
 ### What’s in an export?
 
 ```text

@@ -6,6 +6,8 @@ React/TypeScript is built by Vite into the Python wheel. FastAPI serves it on a 
 
 `engine.py` owns auditing and transformations. The interface never implements data transformations. Exported reproduction scripts call `execute_recipe` from the same package and require matching source fingerprints. The cleaning recipe is ordered; later steps see earlier results. For learned imputation, one training dataset fits the values; multiple datasets without a training assignment are rejected. A single dataset can fit its own values. Median filling widens integer columns when needed. Tied modes choose the first sorted value. All-null fitted columns produce an explicit error. Conversion failures produce nulls, visible in preview and requiring acknowledgement in the interface before export.
 
+The recipe editor keeps unsaved form values separate from the applied ordered recipe. Save replaces the selected step; Cancel discards the draft. Moving/removing is disabled while editing or running a job. Any saved edit, move or removal invalidates prior preview/export approval. Focus returns to the edited/moved/remaining control, with a live status announcement. Request shapes and the Python engine remain unchanged.
+
 ## Local setup
 
 Use Python 3.11+ and Node 22+. Install `.[dev]` in `.venv`, then run `npm ci` in `web`.
@@ -32,6 +34,8 @@ GitHub Actions checks Windows/Linux and Python 3.11/3.14, builds the wheel and p
 ## Work schedule and locking
 
 The chat heartbeat runs at 10:00, 16:00 and 21:00 Asia/Kolkata through October 30, 2026. The computer must be awake, online, and the desktop app running. Sessions may make several meaningful commits; no empty commits, backdating, or artificial splitting. Do not defer completed work to create activity later.
+
+On October 18 an observed 21:00 UTC trigger arrived at 02:30 India time. The stored recurrence was adjusted to 04:30, 10:30 and 15:30 UTC, corresponding to the intended local slots. Preserve the intended India-time schedule; verify the next actual trigger rather than assuming the recurrence is interpreted in the Windows timezone.
 
 Before edits, start `python scripts/work_session.py` in a retained terminal tool session (TTY enabled). Wait for `LOCK ACQUIRED`; preserve its session ID and keep it alive through edits, checks and pushes. If it returns 75/BUSY, skip the run. Release by sending a newline to that session. This uses an OS-backed advisory lock: a crashed holder releases automatically. Every automated writer must participate in this convention.
 
