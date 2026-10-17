@@ -131,6 +131,7 @@ test('scroll reveals work for tall panels from wide datasets',async({page})=>{
 });
 
 test('recipe order changes results and invalidates the approved preview',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
   await page.goto('/');
   await page.locator('#file-import').setInputFiles({name:'order.csv',mimeType:'text/csv',buffer:Buffer.from('code,noise\nA,1\nA,2\nB,3\n')});
   await page.getByRole('button',{name:'Run health check',exact:true}).click();
@@ -154,6 +155,7 @@ test('recipe order changes results and invalidates the approved preview',async({
   await page.getByRole('button',{name:'Preview changes'}).click();
   await expect(page.getByText('Up to date',{exact:true})).toBeVisible();
   await expect(page.locator('.preview-panel tbody tr').nth(1).locator('td').nth(4)).toHaveText('2');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
 });
 
 test('recipe editing supports save, cancel, keyboard focus and preview protection',async({page})=>{
@@ -190,4 +192,28 @@ test('recipe editing supports save, cancel, keyboard focus and preview protectio
   await page.getByRole('button',{name:'Remove recipe step 1'}).focus();await page.keyboard.press('Enter');
   await expect(page.getByRole('button',{name:'Add recipe step'})).toBeFocused();
   await expect(page.getByRole('list',{name:'Ordered cleaning recipe'})).toHaveCount(0);
+});
+
+test('keyboard navigation exposes current location and selected columns',async({page})=>{
+  await page.goto('/');
+  await page.keyboard.press('Tab');
+  await expect(page.getByRole('link',{name:'Skip to workbench'})).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('main')).toBeFocused();
+  await page.getByRole('button',{name:'Explore the demo'}).click();
+  await page.getByRole('button',{name:'Run health check',exact:true}).click();
+  await expect(page.getByRole('button',{name:'All findings',pressed:true})).toBeVisible();
+  await page.getByRole('button',{name:'Split risks'}).click();
+  await expect(page.getByRole('button',{name:'Split risks',pressed:true})).toBeVisible();
+  const group=page.getByRole('group',{name:'Subject / group columns'}).getByRole('button',{name:'subject_id',exact:true});
+  await expect(group).toHaveAttribute('aria-pressed','true');
+  await group.focus();await page.keyboard.press('Space');
+  await expect(group).toHaveAttribute('aria-pressed','false');
+  await page.getByRole('button',{name:'Cleaning studio',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Cleaning studio',exact:true})).toHaveAttribute('aria-current','location');
+  await page.getByLabel('What would you like to do?').selectOption('trim');
+  const city=page.locator('.builder-body').getByRole('button',{name:'city',exact:true});
+  await expect(city).toHaveAttribute('aria-pressed','false');
+  await city.focus();await page.keyboard.press('Space');
+  await expect(city).toHaveAttribute('aria-pressed','true');
 });

@@ -1,5 +1,7 @@
 /* Readable secondary text retains the quiet palette without relying on pale contrast. */
 :root{--muted:#64745a}
+.skip-link{position:fixed;top:12px;left:12px;z-index:100;padding:13px 18px;border-radius:7px;background:#173e32;color:#f5faee;font-size:13px;transform:translateY(-200%)}
+.skip-link:focus{transform:translateY(0)}
 .workspace-label,.workspace-label>span,.nav-item,.sidebar-note p,.sidebar-note>span,
 .sidebar-bottom,.sidebar-bottom>a,.breadcrumb>span,.local-badge,.avatar,.eyebrow,
 .hero-description,.text-button,.hero-trust,.stat-top>span:first-child,.stat-sub,
