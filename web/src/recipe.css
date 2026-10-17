@@ -1,0 +1,11 @@
+.recipe-steps{list-style:none;padding:0;margin:0}
+.recipe-step>.recipe-description{flex:1;min-width:0}
+.recipe-step>.recipe-actions{display:grid;grid-template-columns:repeat(4,28px);gap:2px;margin-left:auto;flex-shrink:0}
+.recipe-actions>.icon-button{width:28px;height:28px;padding:5px}
+.recipe-step .icon-button:focus-visible{outline-offset:1px}
+.recipe-builder.editing{border-color:#91ad74;box-shadow:0 0 0 3px #e9f0df}
+.recipe-edit-note{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid #d4e0c5;border-radius:6px;background:#eef5e4}
+.recipe-edit-note>span{font-size:11px;color:#536b40;line-height:1.7}
+.recipe-edit-note>.text-button{flex-shrink:0}
+.recipe-order-hint{font-size:10px;color:#617153;line-height:1.8;margin-top:-7px}
+@media(max-width:700px){.recipe-step>.recipe-actions{grid-template-columns:repeat(2,28px)}.recipe-step{align-items:flex-start}.recipe-edit-note{align-items:flex-start}.recipe-order-hint{font-size:11px}}

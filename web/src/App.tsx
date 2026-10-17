@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { CSSProperties, ReactNode } from 'react';
 import { Activity, ArrowDown, ArrowDownToLine, ArrowRight, ArrowUpRight, Check, CheckCheck, ChevronDown, ChevronLeft, ChevronRight, CircleHelp, Columns3, Download, ExternalLink, FileCheck2, FileSpreadsheet, FlaskConical, FolderOpen, Github, Layers3, Leaf, LoaderCircle, LockKeyhole, Plus, ScanLine, Search, Settings2, ShieldCheck, Sparkles, Trash2, TriangleAlert, Upload, WandSparkles, X } from 'lucide-react';
 import type { components } from './schema';
+import { RecipeList, STEP_TITLES } from './RecipeList';
 
 type Config = components['schemas']['AuditConfig'];
 type Step = components['schemas']['Step'];
@@ -69,6 +70,10 @@ export default function App() {
   const [filter, setFilter] = useState('all');
   const [activeDataset, setActiveDataset] = useState('');
   const [steps, setSteps] = useState<Step[]>([]);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [recipeAnnouncement, setRecipeAnnouncement] = useState('');
+  const operationInput = useRef<HTMLSelectElement>(null);
+  const saveStepButton = useRef<HTMLButtonElement>(null);
   const [preview, setPreview] = useState<Result | null>(null);
   const [previewKey, setPreviewKey] = useState('');
   const [exportId, setExportId] = useState('');
@@ -182,16 +187,63 @@ export default function App() {
     try {
       await api(base,{method:'DELETE'});
       const next = await api<{id:string}>('/api/sessions',{method:'POST'});
-      setSid(next.id);sidRef.current=next.id;setDatasets([]);setConfig(EMPTY_CONFIG);setAuditResult(null);setAuditId('');setFindings([]);setTotal(0);setSteps([]);setPreview(null);setExportId('');setNotice('Session cleared. Temporary copies and results have been deleted.');
+      setSid(next.id);sidRef.current=next.id;setDatasets([]);setConfig(EMPTY_CONFIG);setAuditResult(null);setAuditId('');setFindings([]);setTotal(0);setSteps([]);resetStepForm();setPreview(null);setExportId('');setNotice('Session cleared. Temporary copies and results have been deleted.');
     } catch(e) {setError((e as Error).message);} finally {setBusy(false);}
   }
+  function resetStepForm() {
+    setEditingIndex(null);setOp('deduplicate');setStepColumns([]);
+    setCastType('decimal');setFillMethod('median');setFillValue('');
+  }
+  function focusStep(index: number, action: string) {
+    requestAnimationFrame(() => document.querySelector<HTMLButtonElement>(
+      `[data-recipe-index="${index}"] [data-recipe-action="${action}"]`)?.focus());
+  }
+  function editStep(index: number) {
+    if (busy || editingIndex !== null) return;
+    const step = steps[index];
+    setEditingIndex(index);setOp(step.op);setStepColumns([...(step.columns || [])]);
+    setCastType(step.dtype || 'decimal');setFillMethod(step.method || 'median');
+    setFillValue(step.value == null ? '' : String(step.value));setError('');
+    setRecipeAnnouncement(`Editing step ${index + 1}: ${STEP_TITLES[step.op]}. Save or cancel to continue.`);
+    requestAnimationFrame(() => operationInput.current?.focus());
+  }
+  function cancelEdit() {
+    const index = editingIndex;
+    resetStepForm();setRecipeAnnouncement('Editing cancelled. The recipe is unchanged.');
+    if (index !== null) focusStep(index, 'edit');
+  }
+  function moveStep(index: number, direction: -1 | 1) {
+    const destination = index + direction;
+    if (busy || editingIndex !== null || destination < 0 || destination >= steps.length) return;
+    const next = [...steps];
+    [next[index], next[destination]] = [next[destination], next[index]];
+    setSteps(next);
+    setRecipeAnnouncement(`Moved ${STEP_TITLES[steps[index].op]} from step ${index + 1} to step ${destination + 1}. Preview again before export.`);
+    // Keep keyboard focus on the moved step. The reverse direction is always enabled.
+    focusStep(destination, direction === -1 ? 'down' : 'up');
+  }
+  function removeStep(index: number) {
+    if (busy || editingIndex !== null) return;
+    setSteps(steps.filter((_, i) => i !== index));
+    setRecipeAnnouncement(`Removed step ${index + 1}. Preview again before export.`);
+    if (steps.length > 1) focusStep(Math.min(index, steps.length - 2), 'remove');
+    else requestAnimationFrame(() => saveStepButton.current?.focus());
+  }
   function addStep() {
+    if (busy || (editingIndex === null && steps.length >= 50)) return;
     setError('');
     if (op !== 'deduplicate' && !stepColumns.length) {setError('Choose at least one column for this operation.');return;}
-    // Preserve text such as "001"; the engine validates values against each selected column type.
-    const value = fillValue;
-    setSteps([...steps,{op, method:fillMethod, columns:op==='deduplicate'?[]:stepColumns, ...(op==='cast'?{dtype:castType}:{}), ...(op==='fill'?{value}: {})}]);
-    setStepColumns([]);
+    const step: Step = {op, method:fillMethod, columns:op==='deduplicate'?[]:[...stepColumns],
+      ...(op==='cast'?{dtype:castType}:{}), ...(op==='fill'?{value:fillValue}: {})};
+    if (editingIndex === null) {
+      setSteps([...steps, step]);setStepColumns([]);
+      setRecipeAnnouncement(`Added step ${steps.length + 1}: ${STEP_TITLES[op]}.`);
+    } else {
+      const index = editingIndex;
+      setSteps(steps.map((existing, i) => i === index ? step : existing));
+      resetStepForm();setRecipeAnnouncement(`Saved step ${index + 1}. Preview again before export.`);
+      focusStep(index, 'edit');
+    }
   }
   const filteredFindings = findings.filter(f => (filter==='all'|| f.severity===filter) && `${f.title} ${f.detail}`.toLowerCase().includes(search.toLowerCase()));
   const failedConversions = preview?.changes?.reduce((sum,c) => sum + Object.values(c.conversion_failures).reduce((a,b)=>a+b,0),0) || 0;
@@ -239,13 +291,17 @@ export default function App() {
 
         <section id="cleaning" className="content-section">
           <Reveal><div className="section-heading"><div><div className="section-kicker">03 <span>/</span> A DELIBERATE NEXT STEP</div><h2>A fresh start. On your terms<span>.</span></h2><p>Build a recipe, preview the effect, and keep every decision reproducible.</p></div><span className="pill"><Leaf size={13}/> Preview first</span></div></Reveal>
-          <Reveal><div className="cleaning-layout"><div className="recipe-builder"><div className="panel-title"><span><WandSparkles size={18}/> Your cleaning recipe</span><span className="pill">{steps.length} steps</span></div><div className="builder-body"><label>What would you like to do?<select value={op} disabled={busy} onChange={e=>{setOp(e.target.value as Step['op']);setStepColumns([]);}}><option value="deduplicate">Remove repeated rows within each split</option><option value="drop">Drop selected columns</option><option value="trim">Trim text whitespace</option><option value="cast">Convert column types</option><option value="fill">Fill missing values</option></select></label>{op!=='deduplicate'&&<fieldset disabled={busy||!profile}><legend>Choose columns</legend><div className="chip-picker">{columnNames.map(c=><button key={c} className={stepColumns.includes(c)?'chip selected':'chip'} onClick={()=>setStepColumns(stepColumns.includes(c)?stepColumns.filter(x=>x!==c):[...stepColumns,c])}>{stepColumns.includes(c)&&<Check size={12}/>} {c}</button>)}</div></fieldset>}{op==='cast'&&<label>Convert to<select value={castType} onChange={e=>setCastType(e.target.value as typeof castType)}><option value="decimal">Decimal number</option><option value="integer">Integer</option><option value="text">Text</option><option value="boolean">Boolean (true / false / 1 / 0)</option><option value="date">Date (YYYY-MM-DD)</option></select></label>}{op==='fill'&&<><label>Fill strategy<select value={fillMethod} onChange={e=>setFillMethod(e.target.value as typeof fillMethod)}><option value="median">Training median (numeric columns)</option><option value="mode">Training mode (most frequent)</option><option value="constant">Constant value</option></select></label>{fillMethod==='constant'&&<label>Fill value<input value={fillValue} onChange={e=>setFillValue(e.target.value)} placeholder="e.g. 0 or Unknown"/></label>}</>}
-            <button className="button secondary full-width" onClick={addStep} disabled={busy||!profile||steps.length>=50}><Plus size={16}/> Add recipe step</button><div className="recipe-steps">{steps.length===0?<div className="recipe-empty"><Layers3 size={25}/><p>Your next steps go here.<br/><span>Nothing changes until you export.</span></p></div>:steps.map((step,i)=><div className="recipe-step" key={i}><span className="step-number">{i+1}</span><div><strong>{{deduplicate:'Remove repeated rows',drop:'Drop columns',trim:'Trim text',cast:'Convert types',fill:'Fill missing values'}[step.op]}</strong><span>{step.columns?.join(', ')||'Within each dataset'}{step.dtype?` → ${step.dtype}`:''}{step.op==='fill'?` · ${step.method}`:''}</span></div><button className="icon-button" aria-label={`Remove recipe step ${i+1}`} disabled={busy} onClick={()=>setSteps(steps.filter((_,j)=>j!==i))}><X size={14}/></button></div>)}</div><button className="button primary full-width" disabled={busy||!datasets.length||!auditResult} onClick={()=>run('preview')}><ScanLine size={16}/> Preview changes <ArrowRight size={16}/></button></div></div><div className="cleaning-aside"><div className="mint-card"><span className="round-icon"><ShieldCheck size={25} strokeWidth={1.4}/></span><h3>Careful by<br/><em>design.</em></h3><p>Your original files stay untouched. Every operation is explicit, previewed, and recorded.</p><ul><li><Check size={14}/> No automatic split deletion</li><li><Check size={14}/> Training-only learned values</li><li><Check size={14}/> The same engine, every time</li></ul><div className="mint-card-art" aria-hidden="true"><div/><div/><div/></div></div><div className="info-note"><CircleHelp size={16}/><p>With multiple datasets, learned filling requires exactly one training split. Without split roles, a single dataset fits its own values.</p></div></div></div></Reveal>
+          <Reveal><div className="cleaning-layout"><div className={`recipe-builder ${editingIndex !== null ? 'editing' : ''}`}><div className="panel-title"><span><WandSparkles size={18}/> Your cleaning recipe</span><span className="pill">{steps.length} {steps.length === 1 ? 'step' : 'steps'}</span></div><div className="builder-body">{editingIndex !== null && <div className="recipe-edit-note"><span>Editing step {editingIndex + 1}. Changes apply when saved.</span><button className="text-button" onClick={cancelEdit} disabled={busy}>Cancel editing</button></div>}<label>What would you like to do?<select ref={operationInput} value={op} disabled={busy} onChange={e=>{setOp(e.target.value as Step['op']);setStepColumns([]);}}><option value="deduplicate">Remove repeated rows within each split</option><option value="drop">Drop selected columns</option><option value="trim">Trim text whitespace</option><option value="cast">Convert column types</option><option value="fill">Fill missing values</option></select></label>{op!=='deduplicate'&&<fieldset disabled={busy||!profile}><legend>Choose columns</legend><div className="chip-picker">{columnNames.map(c=><button key={c} className={stepColumns.includes(c)?'chip selected':'chip'} onClick={()=>setStepColumns(stepColumns.includes(c)?stepColumns.filter(x=>x!==c):[...stepColumns,c])}>{stepColumns.includes(c)&&<Check size={12}/>} {c}</button>)}</div></fieldset>}{op==='cast'&&<label>Convert to<select value={castType} disabled={busy} onChange={e=>setCastType(e.target.value as typeof castType)}><option value="decimal">Decimal number</option><option value="integer">Integer</option><option value="text">Text</option><option value="boolean">Boolean (true / false / 1 / 0)</option><option value="date">Date (YYYY-MM-DD)</option></select></label>}{op==='fill'&&<><label>Fill strategy<select value={fillMethod} disabled={busy} onChange={e=>setFillMethod(e.target.value as typeof fillMethod)}><option value="median">Training median (numeric columns)</option><option value="mode">Training mode (most frequent)</option><option value="constant">Constant value</option></select></label>{fillMethod==='constant'&&<label>Fill value<input value={fillValue} disabled={busy} onChange={e=>setFillValue(e.target.value)} placeholder="e.g. 0 or Unknown"/></label>}</>}
+            <button ref={saveStepButton} className="button secondary full-width" onClick={addStep} disabled={busy||!profile||(editingIndex===null&&steps.length>=50)}><Plus size={16}/>{editingIndex===null?'Add recipe step':'Save step changes'}</button>
+            <p className="recipe-order-hint">Steps run from top to bottom. Changing the order can change your results.</p>
+            <RecipeList steps={steps} busy={busy} editing={editingIndex!==null} onEdit={editStep} onMove={moveStep} onRemove={removeStep}/>
+            <span className="visually-hidden" role="status" aria-live="polite">{recipeAnnouncement}</span>
+            <button className="button primary full-width" disabled={busy||editingIndex!==null||!datasets.length||!auditResult} onClick={()=>run('preview')}><ScanLine size={16}/> Preview changes <ArrowRight size={16}/></button></div></div><div className="cleaning-aside"><div className="mint-card"><span className="round-icon"><ShieldCheck size={25} strokeWidth={1.4}/></span><h3>Careful by<br/><em>design.</em></h3><p>Your original files stay untouched. Every operation is explicit, previewed, and recorded.</p><ul><li><Check size={14}/> No automatic split deletion</li><li><Check size={14}/> Training-only learned values</li><li><Check size={14}/> The same engine, every time</li></ul><div className="mint-card-art" aria-hidden="true"><div/><div/><div/></div></div><div className="info-note"><CircleHelp size={16}/><p>With multiple datasets, learned filling requires exactly one training split. Without split roles, a single dataset fits its own values.</p></div></div></div></Reveal>
           {preview&&<div className="preview-panel"><div className="panel-title"><span><FileCheck2 size={18}/> Cleaning preview</span><span className={`pill ${previewCurrent?'':'stale'}`}>{previewCurrent?'Up to date':'Recipe or settings changed — preview again'}</span></div><div className="table-wrap"><table><thead><tr><th>Step</th><th>Dataset</th><th>Operation</th><th>Affected rows</th><th>Rows after</th><th>Failed conversions</th></tr></thead><tbody>{preview.changes?.map((c,i)=><tr key={i}><td>{c.step}</td><td>{names[c.dataset]}</td><td>{c.op}</td><td>{pretty(c.affected_rows)}</td><td>{pretty(c.after_rows)}</td><td className={Object.values(c.conversion_failures).some(n=>n>0)?'failure-cell':''}>{Object.entries(c.conversion_failures).map(([col,n])=>`${col}: ${n}`).join(', ')||'—'}</td></tr>)}</tbody></table></div>{!preview.changes?.length&&<p className="preview-note">No cleaning operations selected. Export will preserve the imported data values.</p>}<details className="sample-details"><summary>See the resulting records and fitted values <ChevronDown size={15}/></summary>{Object.entries(preview.profiles).map(([id,p])=><div className="preview-records" key={id}><h4>{names[id]} · {pretty(p.rows)} rows</h4><DataTable rows={p.sample}/></div>)}<pre>{JSON.stringify(preview.fitted_values,null,2)}</pre></details></div>}
         </section>
 
         <section id="export" className="content-section">
-          <Reveal><div className="export-panel"><div className="export-copy"><div className="section-kicker">04 <span>/</span> TAKE THE CLARITY WITH YOU</div><h2>Good data.<br/><em>A clear paper trail.</em></h2><p>Your cleaned datasets, a readable report, and the exact recipe to do it all again. In one neat little bundle.</p><div className="export-tags"><span><FileSpreadsheet size={14}/> Cleaned data</span><span><FileCheck2 size={14}/> HTML report</span><span><CheckCheck size={14}/> Python script</span></div></div><div className="export-controls"><div className="export-file-icon"><Download size={30} strokeWidth={1.3}/><span>.zip</span></div><label>Dataset output format<select value={format} onChange={e=>setFormat(e.target.value as typeof format)} disabled={busy}><option value="parquet">Parquet — preserve types</option><option value="csv">CSV — broad compatibility</option></select></label>{failedConversions>0&&previewCurrent&&<label className="acknowledge"><input type="checkbox" checked={confirmExport} onChange={e=>setConfirmExport(e.target.checked)}/><span>I reviewed {failedConversions} failed conversions that create null values.</span></label>}<button className="button lime full-width" onClick={()=>run('export')} disabled={busy||!previewCurrent||(failedConversions>0&&!confirmExport)}><Download size={16}/> Prepare export <ArrowDown size={16}/></button>{exportId&&<a className="button download-link full-width" href={`${base}/jobs/${exportId}/download`} download><CheckCheck size={16}/> Download your bundle</a>}<small>{previewCurrent?'Ready when you are. Source files are never included.':'Preview your recipe first to enable export.'}</small></div></div></Reveal>
+          <Reveal><div className="export-panel"><div className="export-copy"><div className="section-kicker">04 <span>/</span> TAKE THE CLARITY WITH YOU</div><h2>Good data.<br/><em>A clear paper trail.</em></h2><p>Your cleaned datasets, a readable report, and the exact recipe to do it all again. In one neat little bundle.</p><div className="export-tags"><span><FileSpreadsheet size={14}/> Cleaned data</span><span><FileCheck2 size={14}/> HTML report</span><span><CheckCheck size={14}/> Python script</span></div></div><div className="export-controls"><div className="export-file-icon"><Download size={30} strokeWidth={1.3}/><span>.zip</span></div><label>Dataset output format<select value={format} onChange={e=>setFormat(e.target.value as typeof format)} disabled={busy}><option value="parquet">Parquet — preserve types</option><option value="csv">CSV — broad compatibility</option></select></label>{failedConversions>0&&previewCurrent&&<label className="acknowledge"><input type="checkbox" checked={confirmExport} onChange={e=>setConfirmExport(e.target.checked)}/><span>I reviewed {failedConversions} failed conversions that create null values.</span></label>}<button className="button lime full-width" onClick={()=>run('export')} disabled={busy||editingIndex!==null||!previewCurrent||(failedConversions>0&&!confirmExport)}><Download size={16}/> Prepare export <ArrowDown size={16}/></button>{exportId&&<a className="button download-link full-width" href={`${base}/jobs/${exportId}/download`} download><CheckCheck size={16}/> Download your bundle</a>}<small>{previewCurrent?'Ready when you are. Source files are never included.':'Preview your recipe first to enable export.'}</small></div></div></Reveal>
         </section>
         <Reveal><div className="closing-note"><span className="closing-line"/><Leaf size={18}/><p>A healthier dataset. A more thoughtful model.</p><span className="closing-line"/></div></Reveal>
         <footer><Logo small/><span>Local by nature. Open by choice.</span><a href="https://github.com/Aadithya-Ram/DatasetMedic" target="_blank" rel="noreferrer">MIT licensed <ExternalLink size={12}/></a></footer>
