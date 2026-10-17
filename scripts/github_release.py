@@ -16,11 +16,20 @@ REPO = "Aadithya-Ram/DatasetMedic"
 ROOT = Path(__file__).resolve().parents[1]
 
 
+class SafeRedirect(urllib.request.HTTPRedirectHandler):
+    def redirect_request(self, req, fp, code, msg, headers, newurl):
+        redirected = super().redirect_request(req, fp, code, msg, headers, newurl)
+        if redirected and urllib.parse.urlparse(req.full_url).netloc != urllib.parse.urlparse(newurl).netloc:
+            redirected.remove_header("Authorization")
+        return redirected
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--configure", action="store_true")
     parser.add_argument("--publish", action="store_true")
     parser.add_argument("--status", action="store_true")
+    parser.add_argument("--logs", type=int, help="Read a GitHub Actions job's final log lines")
     args = parser.parse_args()
     credentials = subprocess.run(["git", "credential", "fill"],
         input="protocol=https\nhost=github.com\nusername=Aadithya-Ram\n\n", text=True, capture_output=True,
@@ -31,15 +40,15 @@ def main():
     headers = {"Authorization": "Bearer " + fields["password"], "Accept": "application/vnd.github+json",
                "User-Agent": "DatasetMedic-release", "X-GitHub-Api-Version": "2022-11-28"}
 
-    def api(path, method="GET", data=None, binary=None, content_type=None):
+    def api(path, method="GET", data=None, binary=None, content_type=None, raw=False):
         url = path if path.startswith("https://") else "https://api.github.com" + path
         payload = binary if binary is not None else json.dumps(data).encode() if data is not None else None
         request_headers = {**headers, "Content-Type": content_type or "application/json"}
         req = urllib.request.Request(url, headers=request_headers, method=method, data=payload)
         try:
-            with urllib.request.urlopen(req, timeout=60) as response:
+            with urllib.request.build_opener(SafeRedirect()).open(req, timeout=60) as response:
                 body = response.read()
-                return json.loads(body) if body else None
+                return body.decode("utf-8", errors="replace") if raw else json.loads(body) if body else None
         except urllib.error.HTTPError as exc:
             if exc.code == 404:
                 return None
@@ -48,6 +57,9 @@ def main():
     account = api("/user")
     if account["login"].lower() != "aadithya-ram":
         raise SystemExit("The authenticated GitHub account does not match the repository owner.")
+    if args.logs:
+        logs = api(f"/repos/{REPO}/actions/jobs/{args.logs}/logs", raw=True)
+        print("\n".join((logs or "No logs available.").splitlines()[-90:]))
     if args.status:
         runs = api(f"/repos/{REPO}/actions/runs?per_page=3")
         for run in (runs or {}).get("workflow_runs", []):

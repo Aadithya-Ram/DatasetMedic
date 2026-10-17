@@ -101,3 +101,19 @@ test('empty and populated workbench pass automated WCAG A/AA checks',async({page
   await page.getByRole('button',{name:/Shared subjects: subject_id/}).click();
   expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa']).analyze()).violations).toEqual([]);
 });
+
+test('constant text fills preserve leading zeros',async({page})=>{
+  await page.goto('/');
+  await page.locator('#file-import').setInputFiles({name:'codes.csv',mimeType:'text/csv',buffer:Buffer.from('code,amount\nA1,2\n,3\n')});
+  await page.getByRole('button',{name:'Run health check',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Preview changes'})).toBeEnabled();
+  await page.getByLabel('What would you like to do?').selectOption('fill');
+  await page.locator('.builder-body').getByRole('button',{name:'code',exact:true}).click();
+  await page.getByLabel('Fill strategy').selectOption('constant');
+  await page.getByLabel('Fill value',{exact:true}).fill('001');
+  await page.getByRole('button',{name:'Add recipe step'}).click();
+  await page.getByRole('button',{name:'Preview changes'}).click();
+  await expect(page.getByText('Up to date',{exact:true})).toBeVisible();
+  await page.getByText('See the resulting records and fitted values',{exact:true}).click();
+  await expect(page.getByRole('cell',{name:'001',exact:true})).toBeVisible();
+});

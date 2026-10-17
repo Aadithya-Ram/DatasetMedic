@@ -187,8 +187,8 @@ export default function App() {
   function addStep() {
     setError('');
     if (op !== 'deduplicate' && !stepColumns.length) {setError('Choose at least one column for this operation.');return;}
-    let value: string | number | boolean = fillValue;
-    if (fillMethod === 'constant' && fillValue !== '' && Number.isFinite(Number(fillValue))) value=Number(fillValue);
+    // Preserve text such as "001"; the engine validates values against each selected column type.
+    const value = fillValue;
     setSteps([...steps,{op, method:fillMethod, columns:op==='deduplicate'?[]:stepColumns, ...(op==='cast'?{dtype:castType}:{}), ...(op==='fill'?{value}: {})}]);
     setStepColumns([]);
   }

@@ -19,6 +19,7 @@ try {
   await page.getByRole('button',{name:'Explore the demo'}).click();
   await page.getByRole('button',{name:'Run health check',exact:true}).click();
   await page.getByRole('button',{name:/Identical features across splits/}).waitFor({state:'visible'});
+  await page.getByRole('button',{name:'Split risks',exact:true}).click();
   await page.getByRole('button',{name:/Shared subjects: subject_id/}).click();
   await page.locator('#findings').scrollIntoViewIfNeeded();
   await page.evaluate(()=>document.getElementById('findings').scrollIntoView({block:'start'}));
