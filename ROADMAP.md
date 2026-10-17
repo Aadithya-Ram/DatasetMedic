@@ -13,7 +13,7 @@ The 14-day development window is October 17–30, 2026. Scheduled work: 10:00, 1
 - [x] Responsive interface, scroll reveals, ambient illustration, reduced-motion support
 - [x] Initial tests: 20 Python tests and 8 Chromium browser scenarios passed locally
 - [x] Clean-wheel installation, screenshots, benchmark and final release review
-- [ ] GitHub Windows/Linux matrix passes and downloadable release published
+- [x] GitHub Windows/Linux matrix passes and downloadable release published
 
 ## Continuing improvements
 
@@ -37,3 +37,5 @@ Initial three commits were pushed and local/remote HEADs matched. The first clea
 Added a browser regression for literal text fills; all seven browser scenarios pass across the full-suite run plus the focused regression. Reinstalled the latest wheel into clean Python 3.11 and all 20 Python tests passed. The one-million-row synthetic audit completed in 0.3444 seconds (engine only; see benchmark notes). Checked the exclusive work lock against a competing process; fixed its Windows length check and confirmed competing writers exit with BUSY without executing their command.
 
 GitHub Actions completed successfully across Windows/Linux and Python 3.11/3.14 for commit df98db1. Final visual review found that the scroll observer's percentage threshold could keep very tall wide-dataset panels hidden. Changed entry detection to support oversized panels and verified the fix with a 500-column browser regression (eighth scenario). Release assets will be rebuilt from the final checked source.
+
+Final commit 9bf5245 passed all four Windows/Linux × Python 3.11/3.14 CI jobs, including all eight browser scenarios on Linux. Latest wheel passed the 20 Python tests in a clean Python 3.11 environment. Published [v0.1.0](https://github.com/Aadithya-Ram/DatasetMedic/releases/tag/v0.1.0) with wheel, source archive and SHA256SUMS. GitHub recognizes the MIT license and attributes commits to Aadithya-Ram. Confirmed the heartbeat remains active for the three agreed daily slots. The first release is complete; scheduled sessions should now select substantive improvements from the continuing roadmap above.
