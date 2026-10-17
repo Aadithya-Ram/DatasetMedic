@@ -11,7 +11,7 @@ The 14-day development window is October 17–30, 2026. Scheduled work: 10:00, 1
 - [x] CSV/Parquet export, HTML report, pinned reproduction recipe, fingerprints
 - [x] Local worker cancellation, session cleanup, upload limits, useful error messages
 - [x] Responsive interface, scroll reveals, ambient illustration, reduced-motion support
-- [x] Initial tests: 20 Python tests and 6 Chromium browser scenarios passed locally
+- [x] Initial tests: 20 Python tests and 7 Chromium browser scenarios passed locally
 - [x] Clean-wheel installation, screenshots, benchmark and final release review
 - [ ] GitHub Windows/Linux matrix passes and downloadable release published
 
@@ -33,3 +33,5 @@ Do not mark an item complete based only on implementation. Record successful val
 Built the planned v1 workflow in the initial session. Confirmed GitHub account access and repository creation. Configured repository description/topics and a repository-local GitHub no-reply author address. Scheduled three work sessions daily through October 30. Twenty Python tests and six Chromium browser scenarios pass; automated WCAG A/AA checks report no violations in empty and populated workbenches. Built a wheel with the complete interface, installed it in a clean Python 3.11 environment, ran the package's Python tests, and served its interface/API successfully. Captured actual desktop/mobile screenshots and documented a 100,000-row synthetic benchmark. Remote CI verification and downloadable release publication are next.
 
 Initial three commits were pushed and local/remote HEADs matched. The first clean Linux checkout exposed an editable-install failure caused by requiring generated assets before the frontend build. Replaced forced inclusion with optional build artifacts; full wheel validation still requires the interface. Also preserved literal text in constant fills (for example, `001`) instead of coercing it to a number in the browser. Re-running remote checks before release.
+
+Added a browser regression for literal text fills; all seven browser scenarios pass across the full-suite run plus the focused regression. Reinstalled the latest wheel into clean Python 3.11 and all 20 Python tests passed. The one-million-row synthetic audit completed in 0.3444 seconds (engine only; see benchmark notes). Checked the exclusive work lock against a competing process; fixed its Windows length check and confirmed competing writers exit with BUSY without executing their command.

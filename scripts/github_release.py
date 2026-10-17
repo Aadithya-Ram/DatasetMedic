@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import subprocess
+import sys
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -25,6 +26,7 @@ class SafeRedirect(urllib.request.HTTPRedirectHandler):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--configure", action="store_true")
     parser.add_argument("--publish", action="store_true")

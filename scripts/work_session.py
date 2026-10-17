@@ -15,8 +15,9 @@ def main():
     root = Path(__file__).resolve().parents[1]
     lockfile = root / ".git" / "datasetmedic-work.lock"
     with lockfile.open("a+b") as stream:
-        stream.seek(0)
-        if not stream.read(1):
+        # Windows denies reads of the locked byte in a competing process; inspect length instead.
+        stream.seek(0, os.SEEK_END)
+        if stream.tell() == 0:
             stream.write(b"0")
             stream.flush()
         stream.seek(0)
