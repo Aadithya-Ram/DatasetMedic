@@ -1,0 +1,36 @@
+[build-system]
+requires = ["hatchling>=1.26"]
+build-backend = "hatchling.build"
+
+[project]
+name = "datasetmedic"
+version = "0.1.0"
+description = "Local dataset auditing, split leakage evidence, and reproducible cleaning."
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{name = "Aadithya Ram"}]
+dependencies = ["fastapi>=0.115,<1", "uvicorn>=0.34,<1", "polars>=1.30,<2", "python-multipart>=0.0.20,<1"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8,<10", "httpx>=0.28,<1", "build>=1.2,<2", "ruff>=0.11,<1"]
+
+[project.scripts]
+datasetmedic = "datasetmedic.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/datasetmedic"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/datasetmedic/static" = "datasetmedic/static"
+
+[tool.hatch.build.targets.sdist.force-include]
+"src/datasetmedic/static" = "src/datasetmedic/static"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
