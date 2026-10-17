@@ -127,4 +127,3 @@ def test_parquet_import_and_role_validation(client, tmp_path):
     assert client.post(base + "/jobs", json={"kind": "audit", "config": {"roles": {"unknown": "train"}}}).status_code == 422
     jid = client.post(base + "/jobs", json={"kind": "audit", "config": {"roles": {d["id"]: "train"}}}).json()["id"]
     assert wait(client, base, jid)["status"] == "complete"
-

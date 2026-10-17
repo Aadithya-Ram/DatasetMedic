@@ -17,4 +17,3 @@ src/datasetmedic/static/
 web/node_modules/
 .env*
 !.env.example
-

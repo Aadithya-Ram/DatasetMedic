@@ -96,4 +96,3 @@ print("Reproduced datasets written to", args.output)
         (folder / "traceback.txt").write_text(traceback.format_exc(), encoding="utf-8")
         (folder / "error.tmp").write_text(json.dumps({"error": f"{type(exc).__name__}: {exc}"}), encoding="utf-8")
         (folder / "error.tmp").replace(folder / "error.json")
-

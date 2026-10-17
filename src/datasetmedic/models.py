@@ -28,4 +28,3 @@ class JobRequest(BaseModel):
     config: AuditConfig = Field(default_factory=AuditConfig)
     recipe: Recipe = Field(default_factory=Recipe)
     output_format: Literal["csv", "parquet"] = "parquet"
-

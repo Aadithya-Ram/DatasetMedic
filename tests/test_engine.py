@@ -121,4 +121,3 @@ def test_source_row_name_and_nested_parquet(tmp_path):
     pl.DataFrame({"nested": [[1, 2]]}).write_parquet(path)
     with pytest.raises(ValueError, match="Nested Parquet"):
         load_frame(path)
-

@@ -259,4 +259,3 @@ def create_app(storage: str | None = None) -> FastAPI:
     if static.exists():
         app.mount("/", StaticFiles(directory=static, html=True), name="interface")
     return app
-
