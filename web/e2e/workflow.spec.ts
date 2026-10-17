@@ -117,3 +117,15 @@ test('constant text fills preserve leading zeros',async({page})=>{
   await page.getByText('See the resulting records and fitted values',{exact:true}).click();
   await expect(page.getByRole('cell',{name:'001',exact:true})).toBeVisible();
 });
+
+test('scroll reveals work for tall panels from wide datasets',async({page})=>{
+  await page.goto('/');
+  const csv=Array.from({length:500},(_,i)=>`column_${i}`).join(',')+'\n'+Array(500).fill('1').join(',')+'\n';
+  await page.locator('#file-import').setInputFiles({name:'wide.csv',mimeType:'text/csv',buffer:Buffer.from(csv)});
+  await page.getByRole('button',{name:'Run health check',exact:true}).click();
+  const panel=page.locator('.profile-panel').first();
+  await expect(panel).toBeAttached();
+  await panel.evaluate(el=>el.scrollIntoView({block:'start',behavior:'instant'}));
+  await expect(panel.locator('..')).toHaveClass(/visible/);
+  await expect(panel.getByText('column_0',{exact:true}).first()).toBeVisible();
+});

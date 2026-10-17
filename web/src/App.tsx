@@ -30,7 +30,8 @@ function Reveal({children, className = '', delay = 0}: {children: ReactNode; cla
   useEffect(() => {
     const el = ref.current;
     if (!el || !('IntersectionObserver' in window)) return;
-    const observer = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { el.classList.add('visible'); observer.unobserve(el); } }, {threshold: 0.08});
+    // Reveal on entry even when a wide dataset creates a panel taller than the viewport.
+    const observer = new IntersectionObserver(([entry]) => { if (entry.isIntersecting) { el.classList.add('visible'); observer.unobserve(el); } }, {threshold: 0, rootMargin:'0px 0px -24px 0px'});
     el.classList.add('will-reveal');
     observer.observe(el);
     return () => observer.disconnect();

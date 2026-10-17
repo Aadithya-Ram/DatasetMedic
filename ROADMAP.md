@@ -11,7 +11,7 @@ The 14-day development window is October 17–30, 2026. Scheduled work: 10:00, 1
 - [x] CSV/Parquet export, HTML report, pinned reproduction recipe, fingerprints
 - [x] Local worker cancellation, session cleanup, upload limits, useful error messages
 - [x] Responsive interface, scroll reveals, ambient illustration, reduced-motion support
-- [x] Initial tests: 20 Python tests and 7 Chromium browser scenarios passed locally
+- [x] Initial tests: 20 Python tests and 8 Chromium browser scenarios passed locally
 - [x] Clean-wheel installation, screenshots, benchmark and final release review
 - [ ] GitHub Windows/Linux matrix passes and downloadable release published
 
@@ -35,3 +35,5 @@ Built the planned v1 workflow in the initial session. Confirmed GitHub account a
 Initial three commits were pushed and local/remote HEADs matched. The first clean Linux checkout exposed an editable-install failure caused by requiring generated assets before the frontend build. Replaced forced inclusion with optional build artifacts; full wheel validation still requires the interface. Also preserved literal text in constant fills (for example, `001`) instead of coercing it to a number in the browser. Re-running remote checks before release.
 
 Added a browser regression for literal text fills; all seven browser scenarios pass across the full-suite run plus the focused regression. Reinstalled the latest wheel into clean Python 3.11 and all 20 Python tests passed. The one-million-row synthetic audit completed in 0.3444 seconds (engine only; see benchmark notes). Checked the exclusive work lock against a competing process; fixed its Windows length check and confirmed competing writers exit with BUSY without executing their command.
+
+GitHub Actions completed successfully across Windows/Linux and Python 3.11/3.14 for commit df98db1. Final visual review found that the scroll observer's percentage threshold could keep very tall wide-dataset panels hidden. Changed entry detection to support oversized panels and verified the fix with a 500-column browser regression (eighth scenario). Release assets will be rebuilt from the final checked source.
