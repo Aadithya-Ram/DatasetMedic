@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Add a reproducible split-audit benchmark with independently controlled contamination, fresh-process trials, OS peak memory and raw measurement records.
+
 - Search group, exact-match feature and cleaning columns by name, including Unicode names.
 - Review selected columns, clear selections, and keep selections across search filters. Scrollable column lists stay compact on wide datasets.
 - Quote the browser test server's Python path so automatic startup works on Windows and paths with spaces.
