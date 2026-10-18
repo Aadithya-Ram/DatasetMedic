@@ -33,6 +33,8 @@ Build the interface first, then `python -m build` and `python scripts/check_whee
 
 GitHub Actions checks Windows/Linux and Python 3.11/3.14, builds the wheel and performs a package smoke check. Linux/Python 3.11 additionally runs the browser suite.
 
+For split and memory measurements, run `python scripts/benchmark_splits.py --rows 100000 --repeat 3`. Rows are per split. Each repetition runs in a fresh child, verifies known exact/group overlap, and reports timing, process peak memory, frame/file sizes and environment details as JSON. See [benchmark notes](docs/benchmark.md) for scope and recorded raw trials. Keep this separate from the historical single-frame benchmark. CI checks correctness on small fixtures without timing or memory ceilings.
+
 ## Work schedule and locking
 
 The chat heartbeat runs at 10:00, 16:00 and 21:00 Asia/Kolkata through October 30, 2026. The computer must be awake, online, and the desktop app running. Sessions may make several meaningful commits; no empty commits, backdating, or artificial splitting. Do not defer completed work to create activity later.

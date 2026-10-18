@@ -137,6 +137,8 @@ Python owns the analysis; React/TypeScript owns the interface. FastAPI’s OpenA
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) for tests, architecture, reproduction semantics, packaging, and the scheduled development workflow. [ROADMAP.md](ROADMAP.md) records shipped work and the next improvements. [Benchmark notes](docs/benchmark.md) document measurements and their limits.
 
+The source benchmark now covers two one-million-row splits with known exact/group contamination and OS memory measurement. It verifies expected findings on each run and records raw trials. See the [split and memory results](docs/benchmark.md#split-auditing-and-process-memory--october-18-2026) before using file-size limits as a guide to available memory.
+
 ## Contributing
 
 Bug reports with a **small synthetic example** are especially useful. Please avoid posting private datasets or unredacted reports. For changes, include the expected behavior and relevant tests. See [CONTRIBUTING.md](CONTRIBUTING.md).

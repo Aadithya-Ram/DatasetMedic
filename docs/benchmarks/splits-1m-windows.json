@@ -1,0 +1,74 @@
+{
+  "rows_per_split": 1000000,
+  "splits": 2,
+  "columns": 5,
+  "repeat": 3,
+  "record_overlap_percent": 10,
+  "group_overlap_percent": 20,
+  "median_load_seconds": 0.028491199991549365,
+  "median_audit_seconds": 0.8120307000062894,
+  "max_peak_process_bytes": 893837312,
+  "python": "3.14.4",
+  "polars": "1.44.2",
+  "datasetmedic": "0.2.0",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+  "logical_cpus": 24,
+  "polars_threads": 24,
+  "timing_scope": "Parquet loading and engine audit only; excludes startup, generation, UI and export",
+  "memory_scope": "Child lifetime peak, including imports, generation, writing, loading and audit; excludes parent, server and browser",
+  "cache_scope": "Fresh processes; filesystem cache is not flushed",
+  "trials": [
+    {
+      "load_seconds": 0.028491199991549365,
+      "audit_seconds": 0.9121747000026517,
+      "peak_process_bytes": 814460928,
+      "peak_memory_method": "Windows PeakWorkingSetSize",
+      "loaded_frame_bytes": 68250000,
+      "parquet_bytes": 4373435,
+      "expected_counts": {
+        "split_overlap": 100000,
+        "group_overlap": 200000
+      },
+      "observed_counts": {
+        "split_overlap": 100000,
+        "group_overlap": 200000
+      },
+      "verified": true
+    },
+    {
+      "load_seconds": 0.03952160000335425,
+      "audit_seconds": 0.8109205000073416,
+      "peak_process_bytes": 818077696,
+      "peak_memory_method": "Windows PeakWorkingSetSize",
+      "loaded_frame_bytes": 68250000,
+      "parquet_bytes": 4373435,
+      "expected_counts": {
+        "split_overlap": 100000,
+        "group_overlap": 200000
+      },
+      "observed_counts": {
+        "split_overlap": 100000,
+        "group_overlap": 200000
+      },
+      "verified": true
+    },
+    {
+      "load_seconds": 0.024984000003314577,
+      "audit_seconds": 0.8120307000062894,
+      "peak_process_bytes": 893837312,
+      "peak_memory_method": "Windows PeakWorkingSetSize",
+      "loaded_frame_bytes": 68250000,
+      "parquet_bytes": 4373435,
+      "expected_counts": {
+        "split_overlap": 100000,
+        "group_overlap": 200000
+      },
+      "observed_counts": {
+        "split_overlap": 100000,
+        "group_overlap": 200000
+      },
+      "verified": true
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "rows_per_split": 100000,
+  "splits": 2,
+  "columns": 5,
+  "repeat": 3,
+  "record_overlap_percent": 10,
+  "group_overlap_percent": 20,
+  "median_load_seconds": 0.01648189999104943,
+  "median_audit_seconds": 0.11099129999638535,
+  "max_peak_process_bytes": 201940992,
+  "python": "3.14.4",
+  "polars": "1.44.2",
+  "datasetmedic": "0.2.0",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+  "logical_cpus": 24,
+  "polars_threads": 24,
+  "timing_scope": "Parquet loading and engine audit only; excludes startup, generation, UI and export",
+  "memory_scope": "Child lifetime peak, including imports, generation, writing, loading and audit; excludes parent, server and browser",
+  "cache_scope": "Fresh processes; filesystem cache is not flushed",
+  "trials": [
+    {
+      "load_seconds": 0.01648189999104943,
+      "audit_seconds": 0.1132692999963183,
+      "peak_process_bytes": 191561728,
+      "peak_memory_method": "Windows PeakWorkingSetSize",
+      "loaded_frame_bytes": 6825000,
+      "parquet_bytes": 573262,
+      "expected_counts": {
+        "split_overlap": 10000,
+        "group_overlap": 20000
+      },
+      "observed_counts": {
+        "split_overlap": 10000,
+        "group_overlap": 20000
+      },
+      "verified": true
+    },
+    {
+      "load_seconds": 0.016938100001425482,
+      "audit_seconds": 0.11099129999638535,
+      "peak_process_bytes": 201940992,
+      "peak_memory_method": "Windows PeakWorkingSetSize",
+      "loaded_frame_bytes": 6825000,
+      "parquet_bytes": 573262,
+      "expected_counts": {
+        "split_overlap": 10000,
+        "group_overlap": 20000
+      },
+      "observed_counts": {
+        "split_overlap": 10000,
+        "group_overlap": 20000
+      },
+      "verified": true
+    },
+    {
+      "load_seconds": 0.01556660000642296,
+      "audit_seconds": 0.10652469999331515,
+      "peak_process_bytes": 198574080,
+      "peak_memory_method": "Windows PeakWorkingSetSize",
+      "loaded_frame_bytes": 6825000,
+      "parquet_bytes": 573262,
+      "expected_counts": {
+        "split_overlap": 10000,
+        "group_overlap": 20000
+      },
+      "observed_counts": {
+        "split_overlap": 10000,
+        "group_overlap": 20000
+      },
+      "verified": true
+    }
+  ]
+}
