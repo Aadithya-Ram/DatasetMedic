@@ -20,6 +20,7 @@ try {
   await page.getByRole('button',{name:'Explore the demo'}).click();
   await page.getByRole('button',{name:'Run health check',exact:true}).click();
   await page.getByRole('button',{name:/Identical features across splits/}).waitFor({state:'visible'});
+  await page.locator('.settings-panel').screenshot({path:directory+'column-selection.png'});
   await page.getByRole('button',{name:'Split risks',exact:true}).click();
   await page.getByRole('button',{name:/Shared subjects: subject_id/}).click();
   await page.locator('#findings').scrollIntoViewIfNeeded();
@@ -36,7 +37,7 @@ try {
   await page.getByRole('heading',{name:/A little clarity/}).waitFor();
   await expect(page.getByRole('button',{name:'Explore the demo'})).toBeEnabled();
   await page.screenshot({path:directory+'mobile.png'});
-  console.log('Saved four screenshots of the real running application.');
+  console.log('Saved five screenshots of the real running application.');
 } finally {
   for(const id of sessionIds) await fetch(`http://127.0.0.1:8765/api/sessions/${id}`,{method:'DELETE'}).catch(()=>{});
   await browser.close();

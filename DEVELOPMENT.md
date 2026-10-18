@@ -8,6 +8,8 @@ React/TypeScript is built by Vite into the Python wheel. FastAPI serves it on a 
 
 The recipe editor keeps unsaved form values separate from the applied ordered recipe. Save replaces the selected step; Cancel discards the draft. Moving/removing is disabled while editing or running a job. Any saved edit, move or removal invalidates prior preview/export approval. Focus returns to the edited/moved/remaining control, with a live status announcement. Request shapes and the Python engine remain unchanged.
 
+Column pickers share case-insensitive name search, selected-only review and explicit clearing. Filtering never changes selections; scrollable lists keep wide schemas compact. Counts announce visible and selected columns. Search state resets when switching datasets or cleaning operations. An empty exact-match feature selection retains the documented automatic common-column behavior.
+
 ## Local setup
 
 Use Python 3.11+ and Node 22+. Install `.[dev]` in `.venv`, then run `npm ci` in `web`.

@@ -66,6 +66,10 @@ Failed type conversions create null values and are counted in the preview. Expor
 
 **New in v0.2.0:** edit saved recipe steps or move them earlier/later without rebuilding the recipe. A changed recipe needs a fresh preview before export. Boolean constant fills accept `true`, `false`, `1` and `0`. Large integer IDs are displayed as exact text rather than rounded browser numbers. See the [changelog](CHANGELOG.md).
 
+**On `main` (next release):** searchable column pickers for subject groups, feature matching and cleaning. Filter names, review selected columns and keep selections across searches, even with 500 columns. The v0.2.0 download above is preserved; these additions currently require the source installation.
+
+![Searchable column selection in the current source build](docs/images/column-selection.png)
+
 ### What’s in an export?
 
 ```text

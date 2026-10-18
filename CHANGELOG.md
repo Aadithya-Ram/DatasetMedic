@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Search group, exact-match feature and cleaning columns by name, including Unicode names.
+- Review selected columns, clear selections, and keep selections across search filters. Scrollable column lists stay compact on wide datasets.
+- Quote the browser test server's Python path so automatic startup works on Windows and paths with spaces.
+
 ## 0.2.0 — October 18, 2026
 
 - Edit a cleaning step in place, save changes, or cancel without altering the approved recipe.
