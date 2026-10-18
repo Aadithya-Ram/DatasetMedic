@@ -217,3 +217,30 @@ test('keyboard navigation exposes current location and selected columns',async({
   await city.focus();await page.keyboard.press('Space');
   await expect(city).toHaveAttribute('aria-pressed','true');
 });
+
+test('boolean fills from text are applied to boolean columns',async({page})=>{
+  await page.goto('/');
+  await page.locator('#file-import').setInputFiles({name:'flags.csv',mimeType:'text/csv',buffer:Buffer.from('flag,name\ntrue,A\n,B\nfalse,C\n')});
+  await page.getByRole('button',{name:'Run health check',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Add recipe step'})).toBeEnabled();
+  await page.getByLabel('What would you like to do?').selectOption('fill');
+  await page.locator('.builder-body').getByRole('button',{name:'flag',exact:true}).click();
+  await page.getByLabel('Fill strategy').selectOption('constant');
+  await page.getByLabel('Fill value',{exact:true}).fill('false');
+  await page.getByRole('button',{name:'Add recipe step'}).click();
+  await page.getByRole('button',{name:'Preview changes'}).click();
+  await expect(page.getByText('Up to date',{exact:true})).toBeVisible();
+  await page.getByText('See the resulting records and fitted values',{exact:true}).click();
+  const row=page.locator('.preview-records tbody tr').filter({has:page.getByRole('cell',{name:'B',exact:true})});
+  await expect(row.getByRole('cell',{name:'false',exact:true})).toBeVisible();
+});
+
+test('large identifier evidence is shown without rounding',async({page})=>{
+  await page.goto('/');
+  await page.locator('#file-import').setInputFiles({name:'ids.csv',mimeType:'text/csv',buffer:Buffer.from('subject,value\n9007199254740992,1\n9007199254740993,2\n')});
+  await page.getByRole('button',{name:'Run health check',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Add recipe step'})).toBeEnabled();
+  await page.getByText('Preview source records',{exact:true}).click();
+  await expect(page.getByRole('cell',{name:'9007199254740992',exact:true})).toBeVisible();
+  await expect(page.getByRole('cell',{name:'9007199254740993',exact:true})).toBeVisible();
+});

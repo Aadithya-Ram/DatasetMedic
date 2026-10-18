@@ -3,7 +3,7 @@ import json
 import polars as pl
 import pytest
 
-from datasetmedic.engine import audit, execute_recipe, load_frame, render_report, transform
+from datasetmedic.engine import audit, execute_recipe, load_frame, render_report, safe, transform
 
 
 def test_audit_exact_evidence():
@@ -120,4 +120,54 @@ def test_source_row_name_and_nested_parquet(tmp_path):
     path = tmp_path / "nested.parquet"
     pl.DataFrame({"nested": [[1, 2]]}).write_parquet(path)
     with pytest.raises(ValueError, match="Nested Parquet"):
+        load_frame(path)
+
+
+@pytest.mark.parametrize(("value", "expected"), [("true", True), (" FALSE ", False), ("1", True), ("0", False)])
+def test_boolean_constant_fills_from_form_text(value, expected):
+    original = pl.DataFrame({"flag": [True, None, False]})
+    result, summary = transform({"a": original}, {"steps": [
+        {"op": "fill", "columns": ["flag"], "method": "constant", "value": value}]}, {})
+    assert result["a"]["flag"].to_list() == [True, expected, False]
+    assert result["a"].schema["flag"] == pl.Boolean
+    assert summary["changes"][0]["affected_rows"] == 1
+    assert original["flag"].null_count() == 1
+
+
+def test_large_integer_evidence_is_json_safe():
+    values = [2**53 - 1, 2**53, 2**53 + 1, -(2**53 + 1)]
+    result = audit({"a": pl.DataFrame({"subject": values})}, {})
+    sample = result["profiles"]["a"]["sample"]
+    assert [r["subject"] for r in sample] == [2**53 - 1, str(2**53), str(2**53 + 1), str(-(2**53 + 1))]
+    assert safe({"flag": True, "count": 42}) == {"flag": True, "count": 42}
+
+
+@pytest.mark.parametrize("value", ["yes", "2", 2])
+def test_ambiguous_boolean_constant_is_rejected(value):
+    with pytest.raises(ValueError, match="must be true, false, 1, or 0"):
+        transform({"a": pl.DataFrame({"flag": [True, None]})}, {"steps": [
+            {"op": "fill", "columns": ["flag"], "method": "constant", "value": value}]}, {})
+
+
+def test_hash_collisions_do_not_create_overlap(monkeypatch):
+    monkeypatch.setattr(pl.Expr, "hash", lambda self, *args, **kwargs: pl.lit(42, dtype=pl.UInt64))
+    frames = {"a": pl.DataFrame({"x": [1, 2]}), "b": pl.DataFrame({"x": [2, 3]})}
+    findings = audit(frames, {"roles": {"a": "train", "b": "test"}, "features": ["x"]})["findings"]
+    overlaps = [f for f in findings if f["kind"] == "split_overlap"]
+    assert len(overlaps) == 1
+    assert overlaps[0]["count"] == 1
+    assert overlaps[0]["examples"] == [{"x": 2}]
+
+
+def test_row_and_column_limits_reject_instead_of_truncating(tmp_path, monkeypatch):
+    from datasetmedic import engine
+
+    path = tmp_path / "data.csv"
+    path.write_text("x\n1\n2\n3\n")
+    monkeypatch.setattr(engine, "MAX_ROWS", 2)
+    with pytest.raises(ValueError, match="up to 2 rows"):
+        load_frame(path)
+    path.write_text("x,y\n1,2\n")
+    monkeypatch.setattr(engine, "MAX_COLUMNS", 1)
+    with pytest.raises(ValueError, match="up to 1 columns"):
         load_frame(path)

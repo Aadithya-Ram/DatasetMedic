@@ -24,6 +24,9 @@ def safe(value: Any) -> Any:
         return [safe(v) for v in value]
     if isinstance(value, float) and not math.isfinite(value):
         return None
+    # JSON numbers are parsed as IEEE-754 doubles in browsers; preserve identifier evidence exactly.
+    if isinstance(value, int) and abs(value) > 2**53 - 1:
+        return str(value)
     if value is None or isinstance(value, (str, int, float, bool)):
         return value
     return str(value)
@@ -277,6 +280,15 @@ def transform(frames: dict[str, pl.DataFrame], recipe: dict, roles: dict) -> tup
                         failures[col] = df.select((before.is_not_null() & after.is_null()).sum()).item()
                     elif op == "fill":
                         value = learned[col]
+                        if df.schema[col] == pl.Boolean:
+                            if isinstance(value, str):
+                                choices = {"true": True, "false": False, "1": True, "0": False}
+                                token = value.strip().lower()
+                                if token not in choices:
+                                    raise ValueError(f"Boolean fill for {col} must be true, false, 1, or 0.")
+                                value = choices[token]
+                            elif value not in (0, 1):
+                                raise ValueError(f"Boolean fill for {col} must be true, false, 1, or 0.")
                         if df.schema[col].is_float():
                             before = before.fill_nan(None)
                         # Integer median may be fractional; widen rather than truncate.

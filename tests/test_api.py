@@ -127,3 +127,55 @@ def test_parquet_import_and_role_validation(client, tmp_path):
     assert client.post(base + "/jobs", json={"kind": "audit", "config": {"roles": {"unknown": "train"}}}).status_code == 422
     jid = client.post(base + "/jobs", json={"kind": "audit", "config": {"roles": {d["id"]: "train"}}}).json()["id"]
     assert wait(client, base, jid)["status"] == "complete"
+
+
+def test_rejected_uploads_do_not_leave_files_or_entries(client, monkeypatch):
+    import datasetmedic.app as app_module
+
+    base = create_session(client)
+    folder = client.app.state.root / base.split("/")[-1]
+    monkeypatch.setattr(app_module, "MAX_FILE_BYTES", 4)
+    assert client.post(base + "/imports", files={"file": ("too-big.csv", b"x\n123\n")}).status_code == 413
+    assert list(folder.iterdir()) == []
+    assert client.get(base + "/datasets").json() == []
+    assert client.post(base + "/imports", files={"file": ("good.csv", b"x\n1\n")}).status_code == 200
+    monkeypatch.setattr(app_module, "MAX_SESSION_BYTES", 7)
+    assert client.post(base + "/imports", files={"file": ("combined.csv", b"x\n2\n")}).status_code == 413
+    assert len(client.get(base + "/datasets").json()) == 1
+    assert len(list(folder.iterdir())) == 1
+
+
+def test_dataset_count_limit_preserves_first_three(client):
+    base = create_session(client)
+    for i in range(3):
+        assert client.post(base + "/imports", files={"file": (f"{i}.csv", b"x\n1\n")}).status_code == 200
+    assert client.post(base + "/imports", files={"file": ("fourth.csv", b"x\n1\n")}).status_code == 422
+    assert len(client.get(base + "/datasets").json()) == 3
+
+
+def test_boolean_export_reproduces_and_preserves_large_id_evidence(client, tmp_path):
+    from datasetmedic import __version__
+
+    source = tmp_path / "flags.parquet"
+    original = pl.DataFrame({"subject": [2**53, 2**53 + 1, 2**53 + 2], "flag": [True, None, False]})
+    original.write_parquet(source)
+    base = create_session(client)
+    entry = client.post(base + "/imports", files={"file": (source.name, source.read_bytes())}).json()
+    recipe = {"steps": [{"op": "fill", "columns": ["flag"], "method": "constant", "value": "true"}]}
+    jid = client.post(base + "/jobs", json={"kind": "export", "recipe": recipe}).json()["id"]
+    assert wait(client, base, jid)["status"] == "complete"
+    result = client.get(f"{base}/jobs/{jid}/result").json()
+    assert result["profiles"][entry["id"]]["sample"][1]["subject"] == str(2**53 + 1)
+    bundle = tmp_path / "bundle"
+    with zipfile.ZipFile(io.BytesIO(client.get(f"{base}/jobs/{jid}/download").content)) as archive:
+        archive.extractall(bundle)
+    assert f"datasetmedic=={__version__}" in (bundle / "requirements.txt").read_text()
+    output = tmp_path / "reproduced"
+    proc = subprocess.run([sys.executable, str(bundle / "reproduce.py"), "--output", str(output), str(source)],
+                          capture_output=True, text=True, check=False)
+    assert proc.returncode == 0, proc.stderr
+    exported = pl.read_parquet(bundle / "dataset-1.parquet")
+    assert exported["subject"].to_list() == original["subject"].to_list()
+    assert exported["flag"].to_list() == [True, True, False]
+    assert exported.equals(pl.read_parquet(output / "dataset-1.parquet"))
+    assert pl.read_parquet(source).equals(original)
