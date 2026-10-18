@@ -18,6 +18,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
+from datasetmedic import __version__
 from datasetmedic.models import JobRequest
 from datasetmedic.worker import run_job
 
@@ -65,7 +66,7 @@ def create_app(storage: str | None = None) -> FastAPI:
             remove(sid)
         shutil.rmtree(root, ignore_errors=True)
 
-    app = FastAPI(title="DatasetMedic", version="0.1.0", lifespan=lifespan)
+    app = FastAPI(title="DatasetMedic", version=__version__, lifespan=lifespan)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=["127.0.0.1", "localhost", "testserver"])
     app.state.sessions = sessions
     app.state.root = root
@@ -113,7 +114,7 @@ def create_app(storage: str | None = None) -> FastAPI:
 
     @app.get("/api/health")
     def health():
-        return {"status": "ok", "version": "0.1.0"}
+        return {"status": "ok", "version": __version__}
 
     @app.post("/api/sessions")
     def new_session():

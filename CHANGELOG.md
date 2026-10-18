@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — available from `main`
+## 0.2.0 — October 18, 2026
 
 - Edit a cleaning step in place, save changes, or cancel without altering the approved recipe.
 - Move steps earlier/later with explicit controls. Preview and export use the resulting order.
@@ -8,7 +8,10 @@
 - Require a fresh preview after a saved edit, reorder or removal. Block preview/export while editing an unfinished draft.
 - Add a skip-to-workbench link and announce selected column/filter buttons and the current navigation section.
 
-The downloadable v0.1.0 release does not include these interface improvements yet. Build from `main` to try them.
+- Accept unambiguous text constants when filling boolean columns and reject ambiguous values.
+- Preserve large integer identifiers as exact text in JSON evidence; original numeric types remain intact in exported data.
+- Verify hash collisions against actual feature equality and cover import quotas and rejected-file cleanup.
+- Keep package, API and interface versions aligned and select only the current version's files when publishing releases.
 
 ## 0.1.0 — October 17, 2026
 

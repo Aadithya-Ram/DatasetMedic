@@ -37,7 +37,7 @@ jobs:
         working-directory: web
       - run: python -m build
       - run: python scripts/check_wheel.py
-      - run: python -m pip install --force-reinstall --no-deps dist/datasetmedic-0.1.0-py3-none-any.whl
+      - run: python scripts/install_built_wheel.py
       - run: python -c "from datasetmedic.app import create_app; from fastapi.testclient import TestClient; app=create_app(); client=TestClient(app); assert client.get('/').status_code == 200"
       - run: npm exec playwright -- install --with-deps chromium
         working-directory: web

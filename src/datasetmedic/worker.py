@@ -79,7 +79,7 @@ print("Reproduced datasets written to", args.output)
                 (output / "summary.json").write_text(json.dumps(safe(summary), indent=2), encoding="utf-8")
                 (output / "README.txt").write_text(
                     "DatasetMedic export\n\nreport.html describes the CLEANED datasets.\n"
-                    "Install DatasetMedic 0.1.0 from its GitHub release wheel, then requirements.txt.\n"
+                    f"Install DatasetMedic {version('datasetmedic')} from its GitHub release wheel, then requirements.txt.\n"
                     "Run reproduce.py --output NEW_DIRECTORY with original source paths in recipe.json order.\n"
                     "Original sources are not included. Source fingerprints must match.\n"
                     "Cleaning can create nulls on failed conversions; inspect summary.json.\n"

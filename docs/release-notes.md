@@ -1,6 +1,14 @@
-# DatasetMedic 0.1.0
+# DatasetMedic 0.2.0
 
-A local browser workbench for inspecting tabular datasets before training.
+A local browser workbench for inspecting tabular datasets before training, with editable recipes and more reliable data evidence.
+
+## New in this release
+
+- Edit or reorder cleaning steps with keyboard controls and restored focus. Changes require a fresh preview before export; cancelling an edit preserves the approved recipe.
+- Add a skip-to-workbench link and announce selected filters/columns and current navigation location.
+- Fix boolean missing-value fills entered as text (`true`, `false`, `1`, `0`). Ambiguous values are rejected.
+- Show large integer identifiers exactly in evidence, avoiding browser number rounding. Source/export numeric types are preserved.
+- Expand regression coverage for hash collisions, row/column/upload limits, failed-import cleanup and export reproduction.
 
 ## Download and run
 

@@ -26,7 +26,7 @@ Open CSV or Parquet files, inspect the evidence, preview deliberate cleaning, an
 Requires **Python 3.11 or newer**. The downloadable wheel includes the built interface; Node is only needed for development.
 
 ```shell
-python -m pip install https://github.com/Aadithya-Ram/DatasetMedic/releases/download/v0.1.0/datasetmedic-0.1.0-py3-none-any.whl
+python -m pip install https://github.com/Aadithya-Ram/DatasetMedic/releases/download/v0.2.0/datasetmedic-0.2.0-py3-none-any.whl
 datasetmedic
 ```
 
@@ -64,7 +64,7 @@ Preview and export use the same transformation engine. Learned fills use **only 
 
 Failed type conversions create null values and are counted in the preview. Export requires acknowledging those failures. Numeric median filling preserves fractional values, and tied modes use deterministic ordering.
 
-**New on `main`:** edit saved recipe steps or move them earlier/later without rebuilding the recipe. A changed recipe needs a fresh preview before export. These interface improvements are not yet in the v0.1.0 download; use [Build from source](#build-from-source) to try them. See the [changelog](CHANGELOG.md).
+**New in v0.2.0:** edit saved recipe steps or move them earlier/later without rebuilding the recipe. A changed recipe needs a fresh preview before export. Boolean constant fills accept `true`, `false`, `1` and `0`. Large integer IDs are displayed as exact text rather than rounded browser numbers. See the [changelog](CHANGELOG.md).
 
 ### What’s in an export?
 

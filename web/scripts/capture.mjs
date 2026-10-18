@@ -1,4 +1,4 @@
-import { chromium } from '@playwright/test';
+import { chromium, expect } from '@playwright/test';
 import { mkdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
@@ -15,6 +15,7 @@ try {
   await page.emulateMedia({reducedMotion:'reduce'});
   await page.goto('http://127.0.0.1:8765/');
   await page.getByRole('button',{name:'Explore the demo'}).waitFor({state:'visible'});
+  await expect(page.getByRole('button',{name:'Explore the demo'})).toBeEnabled();
   await page.screenshot({path:directory+'overview.png'});
   await page.getByRole('button',{name:'Explore the demo'}).click();
   await page.getByRole('button',{name:'Run health check',exact:true}).click();
@@ -33,6 +34,7 @@ try {
   await page.setViewportSize({width:390,height:844});
   await page.goto('http://127.0.0.1:8765/');
   await page.getByRole('heading',{name:/A little clarity/}).waitFor();
+  await expect(page.getByRole('button',{name:'Explore the demo'})).toBeEnabled();
   await page.screenshot({path:directory+'mobile.png'});
   console.log('Saved four screenshots of the real running application.');
 } finally {

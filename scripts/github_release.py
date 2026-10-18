@@ -4,10 +4,12 @@ Uses the existing Git credential helper. Does not trigger sign-in or print token
 Usage: python scripts/github_release.py --configure | --publish | --status
 """
 import argparse
+import hashlib
 import json
 import os
 import subprocess
 import sys
+import tomllib
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -30,6 +32,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--configure", action="store_true")
     parser.add_argument("--publish", action="store_true")
+    parser.add_argument("--check-release", action="store_true", help="Validate current assets/checksums without publishing")
     parser.add_argument("--status", action="store_true")
     parser.add_argument("--logs", type=int, help="Read a GitHub Actions job's final log lines")
     args = parser.parse_args()
@@ -76,17 +79,30 @@ def main():
         api(f"/repos/{REPO}", "PATCH", {"description": "Inspect datasets before you train. Local data auditing, split leakage evidence, and reproducible cleaning.", "has_wiki": False})
         api(f"/repos/{REPO}/topics", "PUT", {"names": ["machine-learning", "data-quality", "data-cleaning", "data-leakage", "polars", "fastapi", "react", "local-first", "python", "open-source"]})
         print("Repository description/topics configured; local Git author uses account-linked no-reply email.")
-    if args.publish:
-        tag = "v0.1.0"
+    if args.publish or args.check_release:
+        release_version = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]["version"]
+        tag = f"v{release_version}"
+        expected_assets = [f"datasetmedic-{release_version}-py3-none-any.whl", f"datasetmedic-{release_version}.tar.gz"]
+        expected_sums = {name: hashlib.sha256((ROOT / "dist" / name).read_bytes()).hexdigest() for name in expected_assets}
+        checksum_file = ROOT / "dist" / "SHA256SUMS.txt"
+        actual_sums = {line.split(maxsplit=1)[1].strip(): line.split(maxsplit=1)[0]
+                       for line in checksum_file.read_text(encoding="utf-8").splitlines() if line.strip()}
+        if actual_sums != expected_sums:
+            raise SystemExit("Release checksums do not match the current version's assets. Refresh SHA256SUMS first.")
+        if args.check_release:
+            print(f"DatasetMedic {release_version} assets and SHA256SUMS validated. Nothing published.")
+            return
+        commit = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ROOT, check=True, capture_output=True, text=True).stdout.strip()
         release = api(f"/repos/{REPO}/releases/tags/{tag}")
         if not release:
             release = api(f"/repos/{REPO}/releases", "POST", {
-                "tag_name": tag, "target_commitish": "main", "name": "DatasetMedic 0.1.0 — A little clarity before you train",
+                "tag_name": tag, "target_commitish": commit, "name": f"DatasetMedic {release_version} — A little clarity before you train",
                 "body": (ROOT / "docs" / "release-notes.md").read_text(encoding="utf-8"),
                 "draft": False, "prerelease": False})
         names = {a["name"] for a in release["assets"]}
-        for path in sorted((ROOT / "dist").iterdir()):
-            if path.name in names or not (path.name.endswith((".whl", ".tar.gz")) or path.name == "SHA256SUMS.txt"):
+        for filename in [*expected_assets, "SHA256SUMS.txt"]:
+            path = ROOT / "dist" / filename
+            if path.name in names:
                 continue
             url = release["upload_url"].split("{")[0] + "?name=" + urllib.parse.quote(path.name)
             api(url, "POST", binary=path.read_bytes(), content_type="application/octet-stream")
