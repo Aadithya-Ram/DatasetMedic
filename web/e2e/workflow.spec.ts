@@ -2,6 +2,71 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 
+test('import preflight rejects a whole invalid batch without sending files',async({page})=>{
+  let uploads=0;
+  page.on('request',request=>{if(request.url().endsWith('/imports')) uploads++;});
+  await page.goto('/');
+  await expect(page.getByRole('button',{name:'Choose files',exact:true})).toBeEnabled();
+  const valid={name:'valid.CSV',mimeType:'text/csv',buffer:Buffer.from('x\n1\n')};
+  await page.locator('#file-import').setInputFiles([valid,{name:'notes.txt',mimeType:'text/plain',buffer:Buffer.from('hello')}]);
+  await expect(page.getByRole('alert')).toContainText('No files from this batch were imported. “notes.txt” is not a CSV or Parquet file.');
+  expect(uploads).toBe(0);
+  await page.locator('#file-import').setInputFiles({name:'empty.csv',mimeType:'text/csv',buffer:Buffer.from('')});
+  await expect(page.getByRole('alert')).toContainText('“empty.csv” is empty');
+  expect(uploads).toBe(0);
+  await page.locator('.import-panel').evaluate(element=>{
+    const file=new File(['x\n1\n'],'oversized.csv',{type:'text/csv'});
+    Object.defineProperty(file,'size',{value:250*1024*1024+1});
+    const transfer=new DataTransfer(); transfer.items.add(file);
+    element.dispatchEvent(new DragEvent('drop',{bubbles:true,dataTransfer:transfer}));
+  });
+  await expect(page.getByRole('alert')).toContainText('exceeds the 250 MiB per-file limit');
+  expect(uploads).toBe(0);
+  await page.locator('#file-import').setInputFiles(valid);
+  await expect(page.locator('.dataset-name strong')).toHaveText('valid.CSV');
+  await page.locator('#file-import').setInputFiles([valid,valid,valid]);
+  await expect(page.getByRole('alert')).toContainText('exceed 3 datasets per session (1 already imported)');
+  expect(uploads).toBe(1);
+  await expect(page.locator('.dataset-name strong')).toHaveText('valid.CSV');
+  await expect(page.getByRole('button',{name:'Run health check',exact:true})).toBeEnabled();
+});
+
+test('import progress and partial failures preserve successful files and permit retry',async({page,request})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.emulateMedia({reducedMotion:'reduce'});
+  let release!: ()=>void;
+  const gate=new Promise<void>(resolve=>{release=resolve;});
+  let uploads=0;
+  await page.route('**/imports',async route=>{
+    uploads++;
+    if(uploads===1) {await gate; await route.continue();}
+    else await route.fulfill({status:413,contentType:'application/json',body:JSON.stringify({detail:'Synthetic import failure'})});
+  });
+  await page.goto('/');
+  await expect(page.getByRole('button',{name:'Choose files',exact:true})).toBeEnabled();
+  const files=['first.csv','second.csv','third.csv'].map(name=>({name,mimeType:'text/csv',buffer:Buffer.from('city\nPune\n')}));
+  await page.locator('#file-import').setInputFiles(files);
+  const progress=page.getByRole('status').filter({hasText:'Importing file 1 of 3'});
+  try {
+    await expect(progress).toContainText('first.csv');
+    await expect(page.getByRole('button',{name:'Choose files',exact:true})).toBeDisabled();
+    await expect(page.getByLabel('CSV delimiter')).toBeDisabled();
+    expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa']).analyze()).violations).toEqual([]);
+    expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  } finally {release();}
+  await expect(page.getByRole('alert')).toContainText('1 of 3 files imported before “second.csv” failed: Synthetic import failure');
+  expect(uploads).toBe(2);
+  await expect(progress).toHaveCount(0);
+  await expect(page.locator('.dataset-name strong')).toHaveText('first.csv');
+  const id=sessions.get(page)?.[0];
+  expect((await (await request.get(`/api/sessions/${id}/datasets`)).json()).map((item:{name:string})=>item.name)).toEqual(['first.csv']);
+  await page.unroute('**/imports');
+  await page.locator('#file-import').setInputFiles(files.slice(1));
+  await expect(page.locator('.dataset-name strong')).toHaveText(['first.csv','second.csv','third.csv']);
+  await expect(page.getByRole('status').filter({hasText:'2 files imported.'})).toBeVisible();
+  await expect(page.getByRole('button',{name:'Run health check',exact:true})).toBeEnabled();
+});
+
 test('wide column search retains selections across filters and cleaning',async({page})=>{
   await page.setViewportSize({width:390,height:844});
   await page.goto('/');

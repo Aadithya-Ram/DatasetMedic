@@ -5,6 +5,7 @@ import type { components } from './schema';
 import { version as appVersion } from '../package.json';
 import { RecipeList, STEP_TITLES } from './RecipeList';
 import { ColumnPicker } from './ColumnPicker';
+import { importProblem } from './imports';
 
 type Config = components['schemas']['AuditConfig'];
 type Step = components['schemas']['Step'];
@@ -86,6 +87,8 @@ export default function App() {
   const [notice, setNotice] = useState('');
   const [separator, setSeparator] = useState(',');
   const [dropActive, setDropActive] = useState(false);
+  const [importing, setImporting] = useState<{name: string; size: number; index: number; total: number} | null>(null);
+  const importInFlight = useRef(false);
   const [activeSection, setActiveSection] = useState('overview');
   const [scrolled, setScrolled] = useState(false);
   const [op, setOp] = useState<Step['op']>('deduplicate');
@@ -160,19 +163,37 @@ export default function App() {
     try {await api(`${base}/jobs/${job.id}`,{method:'DELETE'});cancelled.current=true;setNotice('Job cancelled. Your source files are unchanged.');} catch(e) {setError((e as Error).message);}
   }
   async function upload(files: FileList | File[]) {
-    if (busy || !sid) return;
-    setBusy(true);setError('');
+    if (busy || !sid || importInFlight.current) return;
+    const batch = Array.from(files);
+    if (!batch.length) return;
+    setNotice('');setError('');
+    const problem = importProblem(batch, datasets);
+    if (problem) {
+      setError(`No files from this batch were imported. ${problem}`);
+      if (fileInput.current) fileInput.current.value='';
+      return;
+    }
+    importInFlight.current=true;
+    setBusy(true);
+    let imported=0;
+    let current='';
     try {
       let next = [...datasets];
-      for (const file of Array.from(files)) {
+      for (const [index,file] of batch.entries()) {
+        current=file.name;
+        setImporting({name:file.name,size:file.size,index:index+1,total:batch.length});
         const body = new FormData();body.append('file',file);body.append('separator',separator);
         const data = await api<Dataset>(`${base}/imports`,{method:'POST',body});
-        next = [...next,data];setDatasets(next);
+        next = [...next,data];setDatasets(next);imported++;
         setAuditResult(null);setAuditId('');setFindings([]);setTotal(0);setPreview(null);setExportId('');
       }
-      setAuditResult(null);setAuditId('');setFindings([]);setTotal(0);setPreview(null);setExportId('');
-      setNotice('Files imported. Choose split roles below, then run your audit.');
-    } catch(e) {setError((e as Error).message);} finally {setBusy(false);if(fileInput.current) fileInput.current.value='';}
+      setNotice(`${imported} ${imported===1?'file imported':'files imported'}. Choose split roles below, then run your audit.`);
+    } catch(e) {
+      setError(`${imported} of ${batch.length} files imported before “${current}” failed: ${(e as Error).message} Remaining files were not imported. Successfully imported files stay in this session.`);
+    } finally {
+      importInFlight.current=false;setImporting(null);setBusy(false);
+      if(fileInput.current) fileInput.current.value='';
+    }
   }
   async function demo() {
     if (busy || !sid || datasets.length) {navigate('workspace');return;}
@@ -272,6 +293,7 @@ export default function App() {
           <Reveal><div className="section-heading"><div><div className="section-kicker">01 <span>/</span> THE STARTING POINT</div><h2>Let’s meet your data<span>.</span></h2><p>One dataset for a health check. Two or three to look between the splits.</p></div><span className="pill"><FileSpreadsheet size={13}/> CSV & Parquet</span></div></Reveal>
           <Reveal><div className={`import-panel ${dropActive?'drag-active':''}`} onDragOver={e=>{e.preventDefault();setDropActive(true);}} onDragLeave={()=>setDropActive(false)} onDrop={e=>{e.preventDefault();setDropActive(false);void upload(e.dataTransfer.files);}}>
             <div className="upload-orbit"><div className="upload-icon"><Upload size={25} strokeWidth={1.5}/></div><span className="orbit-dot"/></div><h3>Drop in a little possibility.</h3><p>Drag your datasets here, or choose files to get started.</p><input ref={fileInput} type="file" accept=".csv,.parquet" multiple onChange={e=>{if(e.target.files)void upload(e.target.files);}} className="visually-hidden" id="file-import" aria-label="Import CSV or Parquet datasets" disabled={busy||!sid||datasets.length>=3}/><button className="button primary" onClick={()=>fileInput.current?.click()} disabled={busy||!sid||datasets.length>=3}><FolderOpen size={16}/> Choose files</button><div className="import-hint">Up to 3 files <span>·</span> 250 MiB per file <span>·</span> Originals stay untouched</div>
+            {importing&&<div className="import-progress" role="status"><LoaderCircle size={18} className="spin" aria-hidden="true"/><div><span>Importing file {importing.index} of {importing.total}</span><strong>{importing.name}</strong><small>{(importing.size/1024/1024).toFixed(2)} MiB · Copying to temporary session storage on this device</small></div></div>}
             <div className="separator-control"><label htmlFor="separator">CSV delimiter</label><select id="separator" value={separator} onChange={e=>setSeparator(e.target.value)} disabled={busy}><option value=",">Comma (,)</option><option value=";">Semicolon (;)</option><option value={'\t'}>Tab</option><option value="|">Pipe (|)</option></select></div>
           </div></Reveal>
           {datasets.length===0&&<Reveal><div className="demo-strip"><div className="demo-badge"><FlaskConical size={21}/></div><div><strong>Just looking around?</strong><p>Try a tiny dataset with a few carefully planted problems.</p></div><button className="text-button" onClick={demo} disabled={busy||!sid}>Load sample datasets <ArrowRight size={16}/></button></div></Reveal>}
