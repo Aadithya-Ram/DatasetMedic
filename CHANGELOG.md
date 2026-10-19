@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Wait for local session readiness before browser tests select files; cover delayed session startup explicitly.
+- Preserve browser failure screenshots, traces and error context in CI for seven days.
+
 ## 0.3.0 — October 19, 2026
 
 - Validate an entire import batch before copying: supported extension, non-empty files, file size and session limits.

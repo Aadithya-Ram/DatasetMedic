@@ -35,6 +35,8 @@ Build the interface first, then `python -m build` and `python scripts/check_whee
 
 GitHub Actions checks Windows/Linux and Python 3.11/3.14, builds the wheel and performs a package smoke check. Linux/Python 3.11 additionally runs the browser suite.
 
+Browser tests wait for the enabled file chooser after navigation, because `setInputFiles` can dispatch to a disabled input before session startup finishes. A gated-session regression covers that boundary without fixed sleeps or retries. Failed CI browser runs preserve Playwright traces, screenshots and error context for seven days via [GitHub's artifact action](https://github.com/actions/upload-artifact). These tests use synthetic fixtures only; do not add private datasets to CI. Locally, inspect `web/test-results/` after a failure.
+
 For split and memory measurements, run `python scripts/benchmark_splits.py --rows 100000 --repeat 3`. Rows are per split. Each repetition runs in a fresh child, verifies known exact/group overlap, and reports timing, process peak memory, frame/file sizes and environment details as JSON. See [benchmark notes](docs/benchmark.md) for scope and recorded raw trials. Keep this separate from the historical single-frame benchmark. CI checks correctness on small fixtures without timing or memory ceilings.
 
 ## Work schedule and locking
