@@ -2,10 +2,34 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 
+// setInputFiles does not wait for an enabled input. Wait for the local session,
+// just as a user must before opening the file picker.
+async function openWorkbench(page: Page) {
+  await page.goto('/');
+  await expect(page.getByRole('button',{name:'Choose files',exact:true})).toBeEnabled();
+}
+
+test('delayed local session keeps import controls disabled until ready',async({page})=>{
+  let release!: ()=>void;
+  const gate=new Promise<void>(resolve=>{release=resolve;});
+  let imports=0;
+  page.on('request',request=>{if(request.url().endsWith('/imports'))imports++;});
+  await page.route('**/api/sessions',async route=>{await gate;await route.continue();});
+  const opening=openWorkbench(page);
+  try {
+    await expect(page.getByRole('button',{name:'Choose files',exact:true})).toBeDisabled();
+    await expect(page.locator('#file-import')).toBeDisabled();
+    expect(imports).toBe(0);
+  } finally {release();await opening;}
+  await page.locator('#file-import').setInputFiles({name:'after-startup.csv',mimeType:'text/csv',buffer:Buffer.from('x\n1\n')});
+  await expect(page.locator('.dataset-name strong')).toHaveText('after-startup.csv');
+  expect(imports).toBe(1);
+});
+
 test('import preflight rejects a whole invalid batch without sending files',async({page})=>{
   let uploads=0;
   page.on('request',request=>{if(request.url().endsWith('/imports')) uploads++;});
-  await page.goto('/');
+  await openWorkbench(page);
   await expect(page.getByRole('button',{name:'Choose files',exact:true})).toBeEnabled();
   const valid={name:'valid.CSV',mimeType:'text/csv',buffer:Buffer.from('x\n1\n')};
   await page.locator('#file-import').setInputFiles([valid,{name:'notes.txt',mimeType:'text/plain',buffer:Buffer.from('hello')}]);
@@ -42,7 +66,7 @@ test('import progress and partial failures preserve successful files and permit 
     if(uploads===1) {await gate; await route.continue();}
     else await route.fulfill({status:413,contentType:'application/json',body:JSON.stringify({detail:'Synthetic import failure'})});
   });
-  await page.goto('/');
+  await openWorkbench(page);
   await expect(page.getByRole('button',{name:'Choose files',exact:true})).toBeEnabled();
   const files=['first.csv','second.csv','third.csv'].map(name=>({name,mimeType:'text/csv',buffer:Buffer.from('city\nPune\n')}));
   await page.locator('#file-import').setInputFiles(files);
@@ -71,7 +95,7 @@ test('import progress and partial failures preserve successful files and permit 
 
 test('wide column search retains selections across filters and cleaning',async({page})=>{
   await page.setViewportSize({width:390,height:844});
-  await page.goto('/');
+  await openWorkbench(page);
   const columns=['Subject_ID','城市',...Array.from({length:498},(_,i)=>`feature_${i}`)];
   await page.locator('#file-import').setInputFiles({name:'search.csv',mimeType:'text/csv',buffer:Buffer.from(columns.join(',')+'\n'+columns.map(()=>1).join(',')+'\n')});
   await page.getByRole('button',{name:'Run health check',exact:true}).click();
@@ -130,7 +154,7 @@ test.afterEach(async ({page,request})=>{
 test('demo → audit → recipe → preview → downloadable export', async ({page}) => {
   const errors: string[] = [];
   page.on('pageerror', error=>errors.push(error.message));
-  await page.goto('/');
+  await openWorkbench(page);
   await expect(page.getByRole('heading',{name:/A little clarity/})).toBeVisible();
   await page.getByRole('button',{name:'Explore the demo'}).click();
   await expect(page.getByText('train.csv',{exact:true})).toBeVisible();
@@ -153,7 +177,7 @@ test('demo → audit → recipe → preview → downloadable export', async ({pa
 });
 
 test('upload, conversion failures, stale previews, and clear',async({page})=>{
-  await page.goto('/');
+  await openWorkbench(page);
   await page.getByRole('button',{name:'Check a dataset'}).click();
   await page.locator('#file-import').setInputFiles({name:'messy.csv',mimeType:'text/csv',buffer:Buffer.from('value,city\n1,Pune\nbad,Delhi\n1,Pune\n')});
   await page.getByRole('button',{name:'Run health check',exact:true}).click();
@@ -174,7 +198,7 @@ test('upload, conversion failures, stale previews, and clear',async({page})=>{
 });
 
 test('malformed import reports an error and the app remains usable',async({page})=>{
-  await page.goto('/');
+  await openWorkbench(page);
   await page.locator('#file-import').setInputFiles({name:'header-only.csv',mimeType:'text/csv',buffer:Buffer.from('x,y\n')});
   await page.getByRole('button',{name:'Run health check',exact:true}).click();
   await expect(page.getByRole('alert')).toContainText('at least one data row');
@@ -184,7 +208,7 @@ test('malformed import reports an error and the app remains usable',async({page}
 test('mobile layout and reduced-motion scroll reveal', async ({page})=>{
   await page.setViewportSize({width:390,height:844});
   await page.emulateMedia({reducedMotion:'reduce'});
-  await page.goto('/');
+  await openWorkbench(page);
   await page.getByRole('button',{name:'Check a dataset'}).click();
   await expect(page.getByRole('heading',{name:'Drop in a little possibility.'})).toBeVisible();
   const widths = await page.evaluate(()=>({scroll:document.documentElement.scrollWidth,width:innerWidth}));
@@ -194,7 +218,7 @@ test('mobile layout and reduced-motion scroll reveal', async ({page})=>{
 });
 
 test('active analysis can be cancelled',async({page})=>{
-  await page.goto('/');
+  await openWorkbench(page);
   await page.getByRole('button',{name:'Explore the demo'}).click();
   await page.getByRole('button',{name:'Run health check',exact:true}).click();
   await page.getByRole('button',{name:'Cancel',exact:true}).click();
@@ -204,7 +228,7 @@ test('active analysis can be cancelled',async({page})=>{
 
 test('empty and populated workbench pass automated WCAG A/AA checks',async({page})=>{
   await page.emulateMedia({reducedMotion:'reduce'});
-  await page.goto('/');
+  await openWorkbench(page);
   expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa']).analyze()).violations).toEqual([]);
   await page.getByRole('button',{name:'Explore the demo'}).click();
   await page.getByRole('button',{name:'Run health check',exact:true}).click();
@@ -213,7 +237,7 @@ test('empty and populated workbench pass automated WCAG A/AA checks',async({page
 });
 
 test('constant text fills preserve leading zeros',async({page})=>{
-  await page.goto('/');
+  await openWorkbench(page);
   await page.locator('#file-import').setInputFiles({name:'codes.csv',mimeType:'text/csv',buffer:Buffer.from('code,amount\nA1,2\n,3\n')});
   await page.getByRole('button',{name:'Run health check',exact:true}).click();
   await expect(page.getByRole('button',{name:'Preview changes'})).toBeEnabled();
@@ -229,7 +253,7 @@ test('constant text fills preserve leading zeros',async({page})=>{
 });
 
 test('scroll reveals work for tall panels from wide datasets',async({page})=>{
-  await page.goto('/');
+  await openWorkbench(page);
   const csv=Array.from({length:500},(_,i)=>`column_${i}`).join(',')+'\n'+Array(500).fill('1').join(',')+'\n';
   await page.locator('#file-import').setInputFiles({name:'wide.csv',mimeType:'text/csv',buffer:Buffer.from(csv)});
   await page.getByRole('button',{name:'Run health check',exact:true}).click();
@@ -242,7 +266,7 @@ test('scroll reveals work for tall panels from wide datasets',async({page})=>{
 
 test('recipe order changes results and invalidates the approved preview',async({page})=>{
   await page.setViewportSize({width:390,height:844});
-  await page.goto('/');
+  await openWorkbench(page);
   await page.locator('#file-import').setInputFiles({name:'order.csv',mimeType:'text/csv',buffer:Buffer.from('code,noise\nA,1\nA,2\nB,3\n')});
   await page.getByRole('button',{name:'Run health check',exact:true}).click();
   await expect(page.getByRole('button',{name:'Add recipe step'})).toBeEnabled();
@@ -269,7 +293,7 @@ test('recipe order changes results and invalidates the approved preview',async({
 });
 
 test('recipe editing supports save, cancel, keyboard focus and preview protection',async({page})=>{
-  await page.goto('/');
+  await openWorkbench(page);
   await page.locator('#file-import').setInputFiles({name:'edit.csv',mimeType:'text/csv',buffer:Buffer.from('code,amount\nA1,2\n,3\n')});
   await page.getByRole('button',{name:'Run health check',exact:true}).click();
   await expect(page.getByRole('button',{name:'Add recipe step'})).toBeEnabled();
@@ -305,7 +329,7 @@ test('recipe editing supports save, cancel, keyboard focus and preview protectio
 });
 
 test('keyboard navigation exposes current location and selected columns',async({page})=>{
-  await page.goto('/');
+  await openWorkbench(page);
   await page.keyboard.press('Tab');
   await expect(page.getByRole('link',{name:'Skip to workbench'})).toBeFocused();
   await page.keyboard.press('Enter');
@@ -329,7 +353,7 @@ test('keyboard navigation exposes current location and selected columns',async({
 });
 
 test('boolean fills from text are applied to boolean columns',async({page})=>{
-  await page.goto('/');
+  await openWorkbench(page);
   await page.locator('#file-import').setInputFiles({name:'flags.csv',mimeType:'text/csv',buffer:Buffer.from('flag,name\ntrue,A\n,B\nfalse,C\n')});
   await page.getByRole('button',{name:'Run health check',exact:true}).click();
   await expect(page.getByRole('button',{name:'Add recipe step'})).toBeEnabled();
@@ -346,7 +370,7 @@ test('boolean fills from text are applied to boolean columns',async({page})=>{
 });
 
 test('large identifier evidence is shown without rounding',async({page})=>{
-  await page.goto('/');
+  await openWorkbench(page);
   await page.locator('#file-import').setInputFiles({name:'ids.csv',mimeType:'text/csv',buffer:Buffer.from('subject,value\n9007199254740992,1\n9007199254740993,2\n')});
   await page.getByRole('button',{name:'Run health check',exact:true}).click();
   await expect(page.getByRole('button',{name:'Add recipe step'})).toBeEnabled();
