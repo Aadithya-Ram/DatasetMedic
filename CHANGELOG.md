@@ -1,6 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.3.0 — October 19, 2026
+
+- Validate an entire import batch before copying: supported extension, non-empty files, file size and session limits.
+- Show the current file and batch position during local copying. Explain partial failures and retain successfully imported files for retry.
 
 - Add a reproducible split-audit benchmark with independently controlled contamination, fresh-process trials, OS peak memory and raw measurement records.
 

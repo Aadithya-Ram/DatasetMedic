@@ -5,7 +5,7 @@ import type { components } from './schema';
 import { version as appVersion } from '../package.json';
 import { RecipeList, STEP_TITLES } from './RecipeList';
 import { ColumnPicker } from './ColumnPicker';
-import { importProblem } from './imports';
+import { importProblem, importSize } from './imports';
 
 type Config = components['schemas']['AuditConfig'];
 type Step = components['schemas']['Step'];
@@ -293,7 +293,7 @@ export default function App() {
           <Reveal><div className="section-heading"><div><div className="section-kicker">01 <span>/</span> THE STARTING POINT</div><h2>Let’s meet your data<span>.</span></h2><p>One dataset for a health check. Two or three to look between the splits.</p></div><span className="pill"><FileSpreadsheet size={13}/> CSV & Parquet</span></div></Reveal>
           <Reveal><div className={`import-panel ${dropActive?'drag-active':''}`} onDragOver={e=>{e.preventDefault();setDropActive(true);}} onDragLeave={()=>setDropActive(false)} onDrop={e=>{e.preventDefault();setDropActive(false);void upload(e.dataTransfer.files);}}>
             <div className="upload-orbit"><div className="upload-icon"><Upload size={25} strokeWidth={1.5}/></div><span className="orbit-dot"/></div><h3>Drop in a little possibility.</h3><p>Drag your datasets here, or choose files to get started.</p><input ref={fileInput} type="file" accept=".csv,.parquet" multiple onChange={e=>{if(e.target.files)void upload(e.target.files);}} className="visually-hidden" id="file-import" aria-label="Import CSV or Parquet datasets" disabled={busy||!sid||datasets.length>=3}/><button className="button primary" onClick={()=>fileInput.current?.click()} disabled={busy||!sid||datasets.length>=3}><FolderOpen size={16}/> Choose files</button><div className="import-hint">Up to 3 files <span>·</span> 250 MiB per file <span>·</span> Originals stay untouched</div>
-            {importing&&<div className="import-progress" role="status"><LoaderCircle size={18} className="spin" aria-hidden="true"/><div><span>Importing file {importing.index} of {importing.total}</span><strong>{importing.name}</strong><small>{(importing.size/1024/1024).toFixed(2)} MiB · Copying to temporary session storage on this device</small></div></div>}
+            {importing&&<div className="import-progress" role="status"><LoaderCircle size={18} className="spin" aria-hidden="true"/><div><span>Importing file {importing.index} of {importing.total}</span><strong>{importing.name}</strong><small>{importSize(importing.size)} · Copying to temporary session storage on this device</small></div></div>}
             <div className="separator-control"><label htmlFor="separator">CSV delimiter</label><select id="separator" value={separator} onChange={e=>setSeparator(e.target.value)} disabled={busy}><option value=",">Comma (,)</option><option value=";">Semicolon (;)</option><option value={'\t'}>Tab</option><option value="|">Pipe (|)</option></select></div>
           </div></Reveal>
           {datasets.length===0&&<Reveal><div className="demo-strip"><div className="demo-badge"><FlaskConical size={21}/></div><div><strong>Just looking around?</strong><p>Try a tiny dataset with a few carefully planted problems.</p></div><button className="text-button" onClick={demo} disabled={busy||!sid}>Load sample datasets <ArrowRight size={16}/></button></div></Reveal>}
@@ -333,6 +333,6 @@ export default function App() {
       </main>
     </div>
     {(error||notice)&&<div className={`toast ${error?'error':'success'}`} role={error?'alert':'status'}><span>{error?<TriangleAlert size={19}/>:<Check size={19}/>}</span><p>{error||notice}</p><button className="icon-button" onClick={()=>{setError('');setNotice('');}} aria-label="Dismiss notification"><X size={17}/></button></div>}
-    {busy&&<div className="job-bar" role="status"><LoaderCircle className="spin" size={21}/><div><strong>{job?.message||'Working locally…'}</strong><div className="progress-track"><span style={{width:`${job?.percent||8}%`}}/></div></div><span>{job?`${job.percent}%`:''}</span>{job&&<button className="text-button" onClick={cancelJob}>Cancel <X size={14}/></button>}</div>}
+    {busy&&!importing&&<div className="job-bar" role="status"><LoaderCircle className="spin" size={21}/><div><strong>{job?.message||'Working locally…'}</strong><div className="progress-track"><span style={{width:`${job?.percent||8}%`}}/></div></div><span>{job?`${job.percent}%`:''}</span>{job&&<button className="text-button" onClick={cancelJob}>Cancel <X size={14}/></button>}</div>}
   </div>;
 }

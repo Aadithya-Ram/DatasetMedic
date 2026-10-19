@@ -1,14 +1,16 @@
-# DatasetMedic 0.2.0
+# DatasetMedic 0.3.0
 
-A local browser workbench for inspecting tabular datasets before training, with editable recipes and more reliable data evidence.
+A local browser workbench for inspecting tabular datasets before training, with easier column selection and clearer local imports.
 
 ## New in this release
 
-- Edit or reorder cleaning steps with keyboard controls and restored focus. Changes require a fresh preview before export; cancelling an edit preserves the approved recipe.
-- Add a skip-to-workbench link and announce selected filters/columns and current navigation location.
-- Fix boolean missing-value fills entered as text (`true`, `false`, `1`, `0`). Ambiguous values are rejected.
-- Show large integer identifiers exactly in evidence, avoiding browser number rounding. Source/export numeric types are preserved.
-- Expand regression coverage for hash collisions, row/column/upload limits, failed-import cleanup and export reproduction.
+- Search group, feature and cleaning columns by name, including Unicode. Review selected columns without losing choices when filtering. Scrollable lists stay compact with 500 columns.
+- Check a complete import batch before copying: file extension, empty files, file size and session limits. The server continues to enforce its own checks.
+- Show the current file and batch position during local copying. Explain partial failures, preserve confirmed successful imports and allow retrying remaining files.
+- Add a source benchmark that verifies known exact/group contamination in fresh processes, with OS memory measurements and committed raw results.
+- Fix automatic browser-test server startup on Windows by quoting the Python path.
+
+The v0.2.0 recipe editor, keyboard navigation, boolean fill and exact large-ID display improvements remain included. Earlier releases are preserved.
 
 ## Download and run
 

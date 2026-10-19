@@ -26,7 +26,7 @@ Open CSV or Parquet files, inspect the evidence, preview deliberate cleaning, an
 Requires **Python 3.11 or newer**. The downloadable wheel includes the built interface; Node is only needed for development.
 
 ```shell
-python -m pip install https://github.com/Aadithya-Ram/DatasetMedic/releases/download/v0.2.0/datasetmedic-0.2.0-py3-none-any.whl
+python -m pip install https://github.com/Aadithya-Ram/DatasetMedic/releases/download/v0.3.0/datasetmedic-0.3.0-py3-none-any.whl
 datasetmedic
 ```
 
@@ -66,9 +66,13 @@ Failed type conversions create null values and are counted in the preview. Expor
 
 **New in v0.2.0:** edit saved recipe steps or move them earlier/later without rebuilding the recipe. A changed recipe needs a fresh preview before export. Boolean constant fills accept `true`, `false`, `1` and `0`. Large integer IDs are displayed as exact text rather than rounded browser numbers. See the [changelog](CHANGELOG.md).
 
-**On `main` (next release):** searchable column pickers for subject groups, feature matching and cleaning. Filter names, review selected columns and keep selections across searches, even with 500 columns. The v0.2.0 download above is preserved; these additions currently require the source installation.
+**New in v0.3.0:** searchable column pickers for subject groups, feature matching and cleaning. Filter names, review selected columns and keep selections across searches, even with 500 columns. Imports now validate a whole batch before copying, show the current file, and explain partial failures while keeping successful files available.
 
-![Searchable column selection in the current source build](docs/images/column-selection.png)
+![Searchable column selection](docs/images/column-selection.png)
+
+![Local import feedback](docs/images/import-progress.png)
+
+Screenshots show the real app with synthetic data. The import request was deliberately delayed to capture its progress state.
 
 ### What’s in an export?
 

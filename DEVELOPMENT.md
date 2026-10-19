@@ -10,6 +10,8 @@ The recipe editor keeps unsaved form values separate from the applied ordered re
 
 Column pickers share case-insensitive name search, selected-only review and explicit clearing. Filtering never changes selections; scrollable lists keep wide schemas compact. Counts announce visible and selected columns. Search state resets when switching datasets or cleaning operations. An empty exact-match feature selection retains the documented automatic common-column behavior.
 
+Imports validate the entire selected batch before copying, using file names, sizes and existing session totals. These browser checks provide early feedback; the server independently enforces its limits. During copying, the interface announces the current file and batch position without claiming byte-level progress. A later request failure stops the batch, retains confirmed successful imports, and reports which file failed. Retry only the remaining files. File-content/row/schema validation still happens during analysis; a supported extension does not guarantee valid data.
+
 ## Local setup
 
 Use Python 3.11+ and Node 22+. Install `.[dev]` in `.venv`, then run `npm ci` in `web`.

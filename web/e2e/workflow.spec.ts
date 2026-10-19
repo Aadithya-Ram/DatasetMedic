@@ -49,6 +49,8 @@ test('import progress and partial failures preserve successful files and permit 
   const progress=page.getByRole('status').filter({hasText:'Importing file 1 of 3'});
   try {
     await expect(progress).toContainText('first.csv');
+    await expect(progress).toContainText('10 bytes');
+    await expect(page.locator('.job-bar')).toHaveCount(0);
     await expect(page.getByRole('button',{name:'Choose files',exact:true})).toBeDisabled();
     await expect(page.getByLabel('CSV delimiter')).toBeDisabled();
     expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa']).analyze()).violations).toEqual([]);

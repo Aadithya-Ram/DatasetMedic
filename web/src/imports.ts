@@ -3,6 +3,12 @@ export const IMPORT_LIMITS = {files: 3, fileBytes: 250 * 1024 * 1024, sessionByt
 
 type FileInfo = {name: string; size: number};
 
+export function importSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} bytes`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KiB`;
+  return `${(bytes / 1024 / 1024).toFixed(2)} MiB`;
+}
+
 export function importProblem(files: FileInfo[], existing: FileInfo[]): string | null {
   if (files.length + existing.length > IMPORT_LIMITS.files) {
     return `This batch would exceed 3 datasets per session (${existing.length} already imported). Choose fewer files or clear the session.`;
