@@ -26,7 +26,7 @@ Open CSV or Parquet files, inspect the evidence, preview deliberate cleaning, an
 Requires **Python 3.11 or newer**. The downloadable wheel includes the built interface; Node is only needed for development.
 
 ```shell
-python -m pip install https://github.com/Aadithya-Ram/DatasetMedic/releases/download/v0.3.0/datasetmedic-0.3.0-py3-none-any.whl
+python -m pip install https://github.com/Aadithya-Ram/DatasetMedic/releases/download/v0.4.0/datasetmedic-0.4.0-py3-none-any.whl
 datasetmedic
 ```
 
@@ -74,9 +74,13 @@ Failed type conversions create null values and are counted in the preview. Expor
 
 Screenshots show the real app with synthetic data. The import request was deliberately delayed to capture its progress state.
 
-**On `main` (next release):** split comparisons show missing percentages with counts and each dataset’s own row total. Named headers, explicit mean/median or most-frequent-value labels, and type differences make unequal splits easier to interpret. These additions currently require the source installation; the v0.3.0 download above is preserved.
+**New in v0.4.0:** split comparisons show missing percentages with counts and each dataset’s own row total. Named headers, explicit summaries and visible type differences help interpret unequal splits. Failed recipe previews identify the step and offer an edit shortcut. Job completion is rechecked before reporting an unexpected worker exit.
 
-![Split comparisons in the current source build](docs/images/split-comparison.png)
+![Split comparisons](docs/images/split-comparison.png)
+
+![Repairing a failed recipe step](docs/images/recipe-recovery.png)
+
+The recovery screenshot deliberately applies text trimming to a numeric column in the synthetic demo. Choose **Edit step** to correct the operation, save and preview again. Source files stay unchanged.
 
 ### What’s in an export?
 

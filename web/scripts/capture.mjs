@@ -33,6 +33,14 @@ try {
   await page.getByRole('button',{name:'Dismiss notification'}).click();
   await page.evaluate(()=>document.getElementById('cleaning').scrollIntoView({block:'start'}));
   await page.screenshot({path:directory+'cleaning-studio.png'});
+  await page.getByLabel('What would you like to do?').selectOption('trim');
+  await page.getByRole('group',{name:'Choose columns',exact:true}).getByRole('button',{name:'age',exact:true}).click();
+  await page.getByRole('button',{name:'Add recipe step'}).click();
+  await page.getByRole('button',{name:'Preview changes'}).click();
+  await expect(page.getByRole('alert')).toContainText('Step 2 (trim)');
+  await expect(page.getByRole('button',{name:'Edit step 2',exact:true})).toBeEnabled();
+  await page.evaluate(()=>document.getElementById('cleaning').scrollIntoView({block:'start'}));
+  await page.screenshot({path:directory+'recipe-recovery.png'});
   await page.goto('http://127.0.0.1:8765/');
   await expect(page.getByRole('button',{name:'Choose files',exact:true})).toBeEnabled();
   let release;
@@ -50,7 +58,7 @@ try {
   await page.getByRole('heading',{name:/A little clarity/}).waitFor();
   await expect(page.getByRole('button',{name:'Explore the demo'})).toBeEnabled();
   await page.screenshot({path:directory+'mobile.png'});
-  console.log('Saved seven screenshots of the real running application. Synthetic import request delayed for the progress capture.');
+  console.log('Saved eight screenshots. Synthetic import delayed for progress capture; recipe error deliberately triggered for recovery capture.');
 } finally {
   for(const id of sessionIds) await fetch(`http://127.0.0.1:8765/api/sessions/${id}`,{method:'DELETE'}).catch(()=>{});
   await browser.close();

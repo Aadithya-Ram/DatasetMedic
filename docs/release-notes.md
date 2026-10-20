@@ -1,16 +1,17 @@
-# DatasetMedic 0.3.0
+# DatasetMedic 0.4.0
 
-A local browser workbench for inspecting tabular datasets before training, with easier column selection and clearer local imports.
+A local browser workbench for inspecting tabular datasets before training, with clearer split comparisons and easier recovery from recipe mistakes.
 
 ## New in this release
 
-- Search group, feature and cleaning columns by name, including Unicode. Review selected columns without losing choices when filtering. Scrollable lists stay compact with 500 columns.
-- Check a complete import batch before copying: file extension, empty files, file size and session limits. The server continues to enforce its own checks.
-- Show the current file and batch position during local copying. Explain partial failures, preserve confirmed successful imports and allow retrying remaining files.
-- Add a source benchmark that verifies known exact/group contamination in fresh processes, with OS memory measurements and committed raw results.
-- Fix automatic browser-test server startup on Windows by quoting the Python path.
+- Show each split's row count and missing percentages with count/denominator evidence. Name dataset headers and label mean/median, most frequent values and type differences explicitly.
+- Preserve tiny positive missing rates and very small summary statistics instead of displaying them as zero. Comparisons remain descriptive, with display rounding disclosed.
+- Identify invalid recipe steps by number and operation, and offer an edit shortcut for the failed recipe snapshot. Changed recipes never reuse an outdated shortcut.
+- Recheck terminal files after worker exit so completed results and specific errors survive a status-polling race. Failed jobs remain unavailable for download.
+- Share typed job-status metadata between the API and interface. Python recipe callers receive a ValueError-compatible RecipeError with step context.
+- Wait for session readiness in browser tests and preserve synthetic failure diagnostics in CI.
 
-The v0.2.0 recipe editor, keyboard navigation, boolean fill and exact large-ID display improvements remain included. Earlier releases are preserved.
+Searchable columns, import feedback, editable recipes, keyboard navigation and reproducible exports remain included. Earlier releases are preserved.
 
 ## Download and run
 

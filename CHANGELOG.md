@@ -1,6 +1,10 @@
 # Changelog
 
-## Unreleased
+## 0.4.0 — October 20, 2026
+
+- Identify invalid recipe steps by number and operation, with an edit shortcut tied to the failed recipe snapshot.
+- Preserve completed results and specific errors when worker exit races with status polling.
+- Share typed job-status metadata between the API and interface; failed exports remain unavailable.
 
 - Compare missing-value rates using each split's own row total, with named dataset headers, explicit numeric/categorical summaries and type differences.
 - Keep positive rates below 0.1% visible and distinguish missing category values from zero/false values.
