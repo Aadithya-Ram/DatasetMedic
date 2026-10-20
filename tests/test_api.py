@@ -52,12 +52,14 @@ def test_demo_audit_preview_export_and_reproduce(client, tmp_path):
     recipe = {"steps": [{"op": "deduplicate"}, {"op": "fill", "columns": ["age"], "method": "median"}]}
     req = {"kind": "preview", "config": config, "recipe": recipe}
     preview_id = client.post(base + "/jobs", json=req).json()["id"]
-    assert wait(client, base, preview_id)["status"] == "complete"
+    preview_status = wait(client, base, preview_id)
+    assert preview_status["status"] == "complete", preview_status
     preview = client.get(f"{base}/jobs/{preview_id}/result").json()
     assert preview["profiles"][datasets[0]["id"]]["rows"] == 7
     req["kind"] = "export"
     export_id = client.post(base + "/jobs", json=req).json()["id"]
-    assert wait(client, base, export_id)["status"] == "complete"
+    export_status = wait(client, base, export_id)
+    assert export_status["status"] == "complete", export_status
     download = client.get(f"{base}/jobs/{export_id}/download")
     assert download.status_code == 200
     bundle = tmp_path / "bundle"
@@ -107,7 +109,57 @@ def test_failed_job_is_visible(client):
     status = wait(client, base, jid)
     assert status["status"] == "failed"
     assert "at least one data row" in status["error"]
+    assert "error_step" not in status
     assert client.get(f"{base}/jobs/{jid}/result").status_code == 409
+
+
+@pytest.mark.parametrize("artifact", ["result.json", "error.json", None])
+def test_job_exit_rechecks_terminal_files_before_reporting_a_crash(client, artifact):
+    base = create_session(client)
+    sid = base.rsplit("/", 1)[1]
+    folder = client.app.state.root / sid / "finishing"
+    folder.mkdir()
+
+    class FinishingProcess:
+        def is_alive(self):
+            # Deterministically publish between the first file check and exit check.
+            if artifact:
+                payload = {"error": "Step 2 (fill): invalid", "error_step": 2, "error_operation": "fill"}
+                (folder / artifact).write_text(json.dumps(payload if artifact == "error.json" else {}), encoding="utf-8")
+            return False
+
+    client.app.state.sessions[sid]["jobs"]["finishing"] = {
+        "folder": folder, "process": FinishingProcess(), "kind": "preview"}
+    status = client.get(base + "/jobs/finishing").json()
+    if artifact == "result.json":
+        assert status["status"] == "complete"
+    elif artifact == "error.json":
+        assert status["error"] == "Step 2 (fill): invalid"
+        assert status["error_step"] == 2
+    else:
+        assert status["status"] == "failed"
+        assert "stopped unexpectedly" in status["error"]
+
+
+@pytest.mark.parametrize("kind", ["preview", "export"])
+def test_recipe_failure_metadata_and_original_import_survive(client, kind):
+    base = create_session(client)
+    dataset = client.post(base + "/imports", files={"file": ("source.csv", b"x,noise\n1,a\n2,b\n")}).json()
+    recipe = {"steps": [{"op": "drop", "columns": ["noise"]},
+                        {"op": "fill", "columns": ["noise"], "method": "constant", "value": "x"}]}
+    jid = client.post(base + "/jobs", json={"kind": kind, "recipe": recipe}).json()["id"]
+    status = wait(client, base, jid)
+    assert status["status"] == "failed"
+    assert status["error_step"] == 2
+    assert status["error_operation"] == "fill"
+    assert "Step 2 (fill)" in status["error"]
+    assert status["error"].startswith("Step 2 (fill):")
+    assert client.get(f"{base}/jobs/{jid}/download").status_code == 409
+    assert client.get(f"{base}/jobs/{jid}/result").status_code == 409
+    audit_id = client.post(base + "/jobs", json={"kind": "audit"}).json()["id"]
+    assert wait(client, base, audit_id)["status"] == "complete"
+    profile = client.get(f"{base}/jobs/{audit_id}/result").json()["profiles"][dataset["id"]]
+    assert profile["sample"] == [{"x": 1, "noise": "a"}, {"x": 2, "noise": "b"}]
 
 
 def test_cancel_worker_and_no_download(client):

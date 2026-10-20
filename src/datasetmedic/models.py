@@ -28,3 +28,12 @@ class JobRequest(BaseModel):
     config: AuditConfig = Field(default_factory=AuditConfig)
     recipe: Recipe = Field(default_factory=Recipe)
     output_format: Literal["csv", "parquet"] = "parquet"
+
+
+class JobStatus(BaseModel):
+    status: Literal["running", "complete", "cancelled", "failed"]
+    message: str | None = None
+    percent: int | None = Field(default=None, ge=0, le=100)
+    error: str | None = None
+    error_step: int | None = Field(default=None, ge=1)
+    error_operation: str | None = None

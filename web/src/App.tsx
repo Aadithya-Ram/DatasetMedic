@@ -11,6 +11,7 @@ import type { Comparison } from './SplitComparisons';
 
 type Config = components['schemas']['AuditConfig'];
 type Step = components['schemas']['Step'];
+type JobStatus = components['schemas']['JobStatus'];
 type Kind = 'audit' | 'preview' | 'export';
 type Dataset = { id: string; name: string; size: number };
 type Row = Record<string, unknown>;
@@ -86,6 +87,7 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [job, setJob] = useState<{id: string; kind: Kind; percent: number; message: string} | null>(null);
   const [error, setError] = useState('');
+  const [recipeFailure, setRecipeFailure] = useState<{step: number; key: string; message: string} | null>(null);
   const [notice, setNotice] = useState('');
   const [separator, setSeparator] = useState(',');
   const [dropActive, setDropActive] = useState(false);
@@ -139,17 +141,21 @@ export default function App() {
   }
   async function run(kind: Kind, useConfig = config) {
     if (!sid || busy) return;
-    setError(''); setNotice('');setBusy(true);cancelled.current=false;
+    setError('');setRecipeFailure(null);setNotice('');setBusy(true);cancelled.current=false;
     try {
       const created = await api<{id:string}>(`${base}/jobs`, {method:'POST',body:JSON.stringify({kind, config:useConfig, recipe:{steps}, output_format:format})});
       setJob({id:created.id,kind,percent:0,message:'Starting local worker'});
       for (;;) {
         await new Promise(r => setTimeout(r,350));
         if (cancelled.current) return;
-        const status = await api<{status:string;percent:number;message:string;error?:string}>(`${base}/jobs/${created.id}`);
-        if (status.status === 'failed') throw new Error(status.error || 'The analysis could not finish.');
+        const status = await api<JobStatus>(`${base}/jobs/${created.id}`);
+        if (status.status === 'failed') {
+          const message=status.error || 'The analysis could not finish.';
+          if (status.error_step && status.error_step<=steps.length) setRecipeFailure({step:status.error_step,key:currentRecipeKey,message});
+          throw new Error(message);
+        }
         if (status.status === 'cancelled') {setNotice('Job cancelled. Your source files are unchanged.');return;}
-        setJob({id:created.id,kind,percent:status.percent,message:status.message});
+        setJob({id:created.id,kind,percent:status.percent??0,message:status.message||'Working locally'});
         if (status.status === 'complete') break;
       }
       if (cancelled.current) return;
@@ -334,7 +340,7 @@ export default function App() {
         <footer><Logo small/><span>Local by nature. Open by choice.</span><a href="https://github.com/Aadithya-Ram/DatasetMedic" target="_blank" rel="noreferrer">MIT licensed <ExternalLink size={12}/></a></footer>
       </main>
     </div>
-    {(error||notice)&&<div className={`toast ${error?'error':'success'}`} role={error?'alert':'status'}><span>{error?<TriangleAlert size={19}/>:<Check size={19}/>}</span><p>{error||notice}</p><button className="icon-button" onClick={()=>{setError('');setNotice('');}} aria-label="Dismiss notification"><X size={17}/></button></div>}
+    {(error||notice)&&<div className={`toast ${error?'error':'success'}`} role={error?'alert':'status'}><span>{error?<TriangleAlert size={19}/>:<Check size={19}/>}</span><p>{error||notice}</p>{error&&recipeFailure&&recipeFailure.message===error&&recipeFailure.key===currentRecipeKey&&editingIndex===null&&<button className="text-button" disabled={busy} onClick={()=>{navigate('cleaning');editStep(recipeFailure.step-1);}}>Edit step {recipeFailure.step}</button>}<button className="icon-button" onClick={()=>{setError('');setRecipeFailure(null);setNotice('');}} aria-label="Dismiss notification"><X size={17}/></button></div>}
     {busy&&!importing&&<div className="job-bar" role="status"><LoaderCircle className="spin" size={21}/><div><strong>{job?.message||'Working locally…'}</strong><div className="progress-track"><span style={{width:`${job?.percent||8}%`}}/></div></div><span>{job?`${job.percent}%`:''}</span>{job&&<button className="text-button" onClick={cancelJob}>Cancel <X size={14}/></button>}</div>}
   </div>;
 }

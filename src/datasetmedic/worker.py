@@ -6,7 +6,7 @@ import zipfile
 from importlib.metadata import version
 from pathlib import Path
 
-from datasetmedic.engine import audit, fingerprint, load_frame, render_report, safe, transform
+from datasetmedic.engine import RecipeError, audit, fingerprint, load_frame, render_report, safe, transform
 
 
 def run_job(root: str, spec: dict):
@@ -94,5 +94,8 @@ print("Reproduced datasets written to", args.output)
     except Exception as exc:  # noqa: BLE001 -- process boundary must return actionable errors to the UI.
         # Logs stay local. API exposes the useful message, not a traceback or local paths.
         (folder / "traceback.txt").write_text(traceback.format_exc(), encoding="utf-8")
-        (folder / "error.tmp").write_text(json.dumps({"error": f"{type(exc).__name__}: {exc}"}), encoding="utf-8")
+        error = {"error": f"{type(exc).__name__}: {exc}"}
+        if isinstance(exc, RecipeError):
+            error.update(error=str(exc), error_step=exc.step, error_operation=exc.operation)
+        (folder / "error.tmp").write_text(json.dumps(error), encoding="utf-8")
         (folder / "error.tmp").replace(folder / "error.json")

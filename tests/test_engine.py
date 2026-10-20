@@ -3,7 +3,49 @@ import json
 import polars as pl
 import pytest
 
-from datasetmedic.engine import audit, execute_recipe, load_frame, render_report, safe, transform
+from datasetmedic.engine import RecipeError, audit, execute_recipe, load_frame, render_report, safe, transform
+
+
+@pytest.mark.parametrize("step", [
+    {"op": "fill", "columns": ["noise"], "method": "constant", "value": "x"},
+    {"op": "trim", "columns": ["x"]},
+    {"op": "fill", "columns": ["text"], "method": "median"},
+    {"op": "fill", "columns": ["empty"], "method": "median"},
+])
+def test_recipe_errors_identify_step_and_preserve_originals(step):
+    frame = pl.DataFrame({"x": [1, 2], "text": ["A", "B"], "noise": ["a", "b"],
+                          "empty": pl.Series([None, None], dtype=pl.Float64)})
+    before = frame.clone()
+    with pytest.raises(RecipeError) as caught:
+        transform({"train": frame}, {"steps": [{"op": "drop", "columns": ["noise"]}, step]}, {})
+    assert caught.value.step == 2
+    assert caught.value.operation == step["op"]
+    assert str(caught.value).startswith(f"Step 2 ({step['op']}): ")
+    assert isinstance(caught.value, ValueError)
+    assert frame.equals(before)
+
+
+def test_recipe_execution_uses_same_error_context_without_writing_outputs(tmp_path):
+    source = tmp_path / "original.csv"
+    content = b"x,noise\n1,a\n2,b\n"
+    source.write_bytes(content)
+    output = tmp_path / "cleaned"
+    recipe = {"steps": [{"op": "drop", "columns": ["noise"]},
+                        {"op": "fill", "columns": ["noise"], "method": "constant", "value": "x"}]}
+    with pytest.raises(RecipeError, match=r"Step 2 \(fill\): Dataset source is missing columns: noise"):
+        execute_recipe({"source": str(source)}, recipe, {}, output)
+    assert source.read_bytes() == content
+    assert not output.exists()
+
+
+def test_unsupported_polars_conversion_keeps_recipe_context():
+    frame = pl.DataFrame({"x": [b"A", b"B"]})
+    recipe = {"steps": [{"op": "deduplicate"}, {"op": "cast", "columns": ["x"], "dtype": "date"}]}
+    with pytest.raises(RecipeError, match=r"Step 2 \(cast\):") as caught:
+        transform({"source": frame}, recipe, {})
+    assert caught.value.operation == "cast"
+    assert isinstance(caught.value.__cause__, pl.exceptions.PolarsError)
+    assert frame["x"].to_list() == [b"A", b"B"]
 
 
 def test_audit_exact_evidence():

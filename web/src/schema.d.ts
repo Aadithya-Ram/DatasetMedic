@@ -257,6 +257,24 @@ export interface components {
              */
             output_format: "csv" | "parquet";
         };
+        /** JobStatus */
+        JobStatus: {
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "running" | "complete" | "cancelled" | "failed";
+            /** Message */
+            message?: string | null;
+            /** Percent */
+            percent?: number | null;
+            /** Error */
+            error?: string | null;
+            /** Error Step */
+            error_step?: number | null;
+            /** Error Operation */
+            error_operation?: string | null;
+        };
         /** Recipe */
         Recipe: {
             /** Steps */
@@ -556,7 +574,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["JobStatus"];
                 };
             };
             /** @description Validation Error */

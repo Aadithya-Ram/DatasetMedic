@@ -8,4 +8,6 @@
 .recipe-edit-note>span{font-size:11px;color:#536b40;line-height:1.7}
 .recipe-edit-note>.text-button{flex-shrink:0}
 .recipe-order-hint{font-size:10px;color:#617153;line-height:1.8;margin-top:-7px}
+.toast p{min-width:0;overflow-wrap:anywhere}
+.toast>.text-button{flex-shrink:0;white-space:nowrap}
 @media(max-width:700px){.recipe-step>.recipe-actions{grid-template-columns:repeat(2,28px)}.recipe-step{align-items:flex-start}.recipe-edit-note{align-items:flex-start}.recipe-order-hint{font-size:11px}}

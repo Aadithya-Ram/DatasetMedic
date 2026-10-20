@@ -19,7 +19,7 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from datasetmedic import __version__
-from datasetmedic.models import JobRequest
+from datasetmedic.models import JobRequest, JobStatus
 from datasetmedic.worker import run_job
 
 MAX_FILE_BYTES = 250 * 1024 * 1024
@@ -88,7 +88,7 @@ def create_app(storage: str | None = None) -> FastAPI:
         s["touched"] = time.monotonic()
         return s
 
-    def job_status(job):
+    def terminal_status(job):
         folder = job["folder"]
         if job.get("cancelled"):
             return {"status": "cancelled", "message": "Cancelled", "percent": 0}
@@ -96,6 +96,13 @@ def create_app(storage: str | None = None) -> FastAPI:
             return {"status": "failed", **json.loads((folder / "error.json").read_text(encoding="utf-8"))}
         if (folder / "result.json").exists():
             return {"status": "complete", "message": "Complete", "percent": 100}
+        return None
+
+    def job_status(job):
+        final = terminal_status(job)
+        if final:
+            return final
+        folder = job["folder"]
         progress = {"message": "Starting local worker", "percent": 0}
         if (folder / "progress.json").exists():
             try:
@@ -103,6 +110,10 @@ def create_app(storage: str | None = None) -> FastAPI:
             except (OSError, json.JSONDecodeError):
                 pass
         if not job["process"].is_alive():
+            # The worker may publish its final file after our first check but before exiting.
+            final = terminal_status(job)
+            if final:
+                return final
             return {"status": "failed", "error": "The analysis worker stopped unexpectedly. Try a smaller dataset."}
         return {"status": "running", **progress}
 
@@ -217,7 +228,7 @@ def create_app(storage: str | None = None) -> FastAPI:
                 shutil.rmtree(old["folder"], ignore_errors=True)
             return {"id": jid, "status": "running"}
 
-    @app.get("/api/sessions/{sid}/jobs/{jid}")
+    @app.get("/api/sessions/{sid}/jobs/{jid}", response_model=JobStatus, response_model_exclude_none=True)
     def status(sid: str, jid: str):
         return job_status(get_job(sid, jid))
 

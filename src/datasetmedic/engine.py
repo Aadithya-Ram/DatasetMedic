@@ -16,6 +16,15 @@ MAX_COLUMNS = 500
 DTYPES = {"text": pl.String, "integer": pl.Int64, "decimal": pl.Float64, "boolean": pl.Boolean, "date": pl.Date}
 
 
+class RecipeError(ValueError):
+    """An invalid recipe step, with a one-based position shared by every runner."""
+
+    def __init__(self, step: int, operation: str, detail: str):
+        self.step = step
+        self.operation = operation
+        super().__init__(f"Step {step} ({operation}): {detail}")
+
+
 def safe(value: Any) -> Any:
     """Convert Polars/date/nonfinite values into strict, portable JSON."""
     if isinstance(value, dict):
@@ -213,108 +222,111 @@ def transform(frames: dict[str, pl.DataFrame], recipe: dict, roles: dict) -> tup
     fitted = {}
     for index, step in enumerate(recipe.get("steps", [])):
         op = step["op"]
-        cols = step.get("columns", [])
-        if op != "deduplicate" and not cols:
-            raise ValueError(f"Choose columns for {op}.")
-        for key, df in out.items():
-            absent = [c for c in cols if c not in df.columns]
-            if absent:
-                raise ValueError(f"Dataset {key} is missing columns: {', '.join(absent)}")
-        learned = {}
-        if op == "fill":
-            method = step.get("method", "median")
-            if method not in ("median", "mode", "constant"):
-                raise ValueError("Unknown fill strategy.")
-            trains = [k for k in out if roles.get(k) == "train"]
-            if method != "constant" and len(trains) != 1 and len(out) > 1:
-                raise ValueError("Learned filling across multiple datasets requires exactly one training dataset.")
-            fit = out[trains[0] if trains else next(iter(out))]
-            for col in cols:
-                series = fit[col]
-                if series.dtype.is_float():
-                    series = series.fill_nan(None)
-                if method == "median":
-                    if not is_numeric(series.dtype):
-                        raise ValueError(f"Median requires numeric values: {col}")
-                    value = series.median()
-                elif method == "mode":
-                    modes = series.drop_nulls().mode().sort()
-                    value = modes[0] if len(modes) else None
-                else:
-                    value = step.get("value")
-                if value is None:
-                    raise ValueError(f"Cannot fill {col}: the fitting data has no usable value.")
-                learned[col] = value
-            fitted[str(index)] = safe(learned)
-        for key, original in list(out.items()):
-            df = original
-            failures = {}
-            if op == "drop":
-                if len(cols) == df.width:
-                    raise ValueError("Keep at least one column.")
-                df = df.drop(cols)
-                affected = original.height
-            elif op == "deduplicate":
-                df = df.unique(maintain_order=True)
-                affected = original.height - df.height
-            else:
-                expressions = []
-                affected_mask = pl.lit(False)
+        try:
+            cols = step.get("columns", [])
+            if op != "deduplicate" and not cols:
+                raise ValueError(f"Choose columns for {op}.")
+            for key, df in out.items():
+                absent = [c for c in cols if c not in df.columns]
+                if absent:
+                    raise ValueError(f"Dataset {key} is missing columns: {', '.join(absent)}")
+            learned = {}
+            if op == "fill":
+                method = step.get("method", "median")
+                if method not in ("median", "mode", "constant"):
+                    raise ValueError("Unknown fill strategy.")
+                trains = [k for k in out if roles.get(k) == "train"]
+                if method != "constant" and len(trains) != 1 and len(out) > 1:
+                    raise ValueError("Learned filling across multiple datasets requires exactly one training dataset.")
+                fit = out[trains[0] if trains else next(iter(out))]
                 for col in cols:
-                    before = pl.col(col)
-                    if op == "trim":
-                        if df.schema[col] != pl.String:
-                            raise ValueError(f"Trimming requires text: {col}")
-                        after = before.str.strip_chars()
-                    elif op == "cast":
-                        dtype = DTYPES.get(step.get("dtype"))
-                        if dtype is None:
-                            raise ValueError("Choose a supported conversion type.")
-                        if dtype == pl.Date and df.schema[col] == pl.String:
-                            after = before.str.to_date(format="%Y-%m-%d", strict=False)
-                        elif dtype == pl.Boolean and df.schema[col] == pl.String:
-                            lower = before.str.to_lowercase().str.strip_chars()
-                            after = pl.when(lower.is_in(["true", "1"])).then(True).when(lower.is_in(["false", "0"])).then(False).otherwise(None)
-                        else:
-                            after = before.cast(dtype, strict=False)
-                        failures[col] = df.select((before.is_not_null() & after.is_null()).sum()).item()
-                    elif op == "fill":
-                        value = learned[col]
-                        if df.schema[col] == pl.Boolean:
-                            if isinstance(value, str):
-                                choices = {"true": True, "false": False, "1": True, "0": False}
-                                token = value.strip().lower()
-                                if token not in choices:
+                    series = fit[col]
+                    if series.dtype.is_float():
+                        series = series.fill_nan(None)
+                    if method == "median":
+                        if not is_numeric(series.dtype):
+                            raise ValueError(f"Median requires numeric values: {col}")
+                        value = series.median()
+                    elif method == "mode":
+                        modes = series.drop_nulls().mode().sort()
+                        value = modes[0] if len(modes) else None
+                    else:
+                        value = step.get("value")
+                    if value is None:
+                        raise ValueError(f"Cannot fill {col}: the fitting data has no usable value.")
+                    learned[col] = value
+                fitted[str(index)] = safe(learned)
+            for key, original in list(out.items()):
+                df = original
+                failures = {}
+                if op == "drop":
+                    if len(cols) == df.width:
+                        raise ValueError("Keep at least one column.")
+                    df = df.drop(cols)
+                    affected = original.height
+                elif op == "deduplicate":
+                    df = df.unique(maintain_order=True)
+                    affected = original.height - df.height
+                else:
+                    expressions = []
+                    affected_mask = pl.lit(False)
+                    for col in cols:
+                        before = pl.col(col)
+                        if op == "trim":
+                            if df.schema[col] != pl.String:
+                                raise ValueError(f"Trimming requires text: {col}")
+                            after = before.str.strip_chars()
+                        elif op == "cast":
+                            dtype = DTYPES.get(step.get("dtype"))
+                            if dtype is None:
+                                raise ValueError("Choose a supported conversion type.")
+                            if dtype == pl.Date and df.schema[col] == pl.String:
+                                after = before.str.to_date(format="%Y-%m-%d", strict=False)
+                            elif dtype == pl.Boolean and df.schema[col] == pl.String:
+                                lower = before.str.to_lowercase().str.strip_chars()
+                                after = pl.when(lower.is_in(["true", "1"])).then(True).when(lower.is_in(["false", "0"])).then(False).otherwise(None)
+                            else:
+                                after = before.cast(dtype, strict=False)
+                            failures[col] = df.select((before.is_not_null() & after.is_null()).sum()).item()
+                        elif op == "fill":
+                            value = learned[col]
+                            if df.schema[col] == pl.Boolean:
+                                if isinstance(value, str):
+                                    choices = {"true": True, "false": False, "1": True, "0": False}
+                                    token = value.strip().lower()
+                                    if token not in choices:
+                                        raise ValueError(f"Boolean fill for {col} must be true, false, 1, or 0.")
+                                    value = choices[token]
+                                elif value not in (0, 1):
                                     raise ValueError(f"Boolean fill for {col} must be true, false, 1, or 0.")
-                                value = choices[token]
-                            elif value not in (0, 1):
-                                raise ValueError(f"Boolean fill for {col} must be true, false, 1, or 0.")
-                        if df.schema[col].is_float():
-                            before = before.fill_nan(None)
-                        # Integer median may be fractional; widen rather than truncate.
-                        if isinstance(value, float) and df.schema[col].is_integer():
-                            before = before.cast(pl.Float64)
-                        try:
-                            typed = pl.Series([value]).cast(df.select(before).schema[col], strict=True)[0]
-                        except (pl.exceptions.PolarsError, TypeError) as exc:
-                            raise ValueError(f"Fill value is incompatible with {col}. Convert the type first.") from exc
-                        after = before.fill_null(typed)
-                    else:
-                        raise ValueError(f"Unknown cleaning operation: {op}")
-                    old = pl.col(col)
-                    if op == "fill":
-                        changed = missing_expr(col, original.schema[col])
-                    elif op == "cast":
-                        changed = old.is_not_null() if str(original.schema[col]) != str(DTYPES[step["dtype"]]) else old.ne_missing(after)
-                    else:
-                        changed = old.ne_missing(after)
-                    affected_mask = affected_mask | changed
-                    expressions.append(after.alias(col))
-                affected = df.select(affected_mask.sum()).item()
-                df = df.with_columns(expressions)
-            out[key] = df
-            changes.append({"step": index + 1, "dataset": key, "op": op, "affected_rows": affected,
-                            "conversion_failures": failures, "before_rows": original.height, "after_rows": df.height})
+                            if df.schema[col].is_float():
+                                before = before.fill_nan(None)
+                            # Integer median may be fractional; widen rather than truncate.
+                            if isinstance(value, float) and df.schema[col].is_integer():
+                                before = before.cast(pl.Float64)
+                            try:
+                                typed = pl.Series([value]).cast(df.select(before).schema[col], strict=True)[0]
+                            except (pl.exceptions.PolarsError, TypeError) as exc:
+                                raise ValueError(f"Fill value is incompatible with {col}. Convert the type first.") from exc
+                            after = before.fill_null(typed)
+                        else:
+                            raise ValueError(f"Unknown cleaning operation: {op}")
+                        old = pl.col(col)
+                        if op == "fill":
+                            changed = missing_expr(col, original.schema[col])
+                        elif op == "cast":
+                            changed = old.is_not_null() if str(original.schema[col]) != str(DTYPES[step["dtype"]]) else old.ne_missing(after)
+                        else:
+                            changed = old.ne_missing(after)
+                        affected_mask = affected_mask | changed
+                        expressions.append(after.alias(col))
+                    affected = df.select(affected_mask.sum()).item()
+                    df = df.with_columns(expressions)
+                out[key] = df
+                changes.append({"step": index + 1, "dataset": key, "op": op, "affected_rows": affected,
+                                "conversion_failures": failures, "before_rows": original.height, "after_rows": df.height})
+        except (ValueError, pl.exceptions.PolarsError) as exc:
+            raise RecipeError(index + 1, op, str(exc)) from exc
     return out, {"changes": changes, "fitted_values": fitted,
                  "profiles": {k: profile(v) for k, v in out.items()}}
 

@@ -2,6 +2,56 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 
+test('failed recipe preview identifies its step and opens that step for repair',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await openWorkbench(page);
+  await page.locator('#file-import').setInputFiles({name:'repair.csv',mimeType:'text/csv',buffer:Buffer.from('code,noise\nA1,1\n,2\nA1,3\n')});
+  await page.getByRole('button',{name:'Run health check',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Add recipe step'})).toBeEnabled();
+  await page.getByRole('button',{name:'Add recipe step'}).click();
+  await page.getByLabel('What would you like to do?').selectOption('fill');
+  await page.getByRole('group',{name:'Choose columns',exact:true}).getByRole('button',{name:'code',exact:true}).click();
+  await page.getByRole('button',{name:'Add recipe step'}).click();
+  await page.getByRole('button',{name:'Preview changes'}).click();
+  await expect(page.getByRole('alert')).toContainText('Step 2 (fill): Median requires numeric values: code');
+  await expect(page.getByRole('button',{name:'Prepare export'})).toBeDisabled();
+  expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa']).analyze()).violations).toEqual([]);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.getByRole('button',{name:'Edit step 2',exact:true}).focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByLabel('What would you like to do?')).toBeFocused();
+  await expect(page.getByLabel('Fill strategy')).toHaveValue('median');
+  await page.getByLabel('Fill strategy').selectOption('mode');
+  await page.getByRole('button',{name:'Save step changes'}).click();
+  await page.getByRole('button',{name:'Preview changes'}).click();
+  await expect(page.getByText('Up to date',{exact:true})).toBeVisible();
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Prepare export'})).toBeEnabled();
+  await page.getByText('See the resulting records and fitted values',{exact:true}).click();
+  const row=page.locator('.preview-records tbody tr').filter({has:page.getByRole('cell',{name:'2',exact:true})});
+  await expect(row.getByRole('cell',{name:'A1',exact:true})).toBeVisible();
+});
+
+test('recipe error edit links disappear when their recorded recipe changes',async({page})=>{
+  await openWorkbench(page);
+  await page.locator('#file-import').setInputFiles({name:'stale-error.csv',mimeType:'text/csv',buffer:Buffer.from('code,noise\nA,1\nB,2\n')});
+  await page.getByRole('button',{name:'Run health check',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Add recipe step'})).toBeEnabled();
+  await page.getByLabel('What would you like to do?').selectOption('drop');
+  await page.getByRole('group',{name:'Choose columns',exact:true}).getByRole('button',{name:'noise',exact:true}).click();
+  await page.getByRole('button',{name:'Add recipe step'}).click();
+  await page.getByLabel('What would you like to do?').selectOption('fill');
+  await page.getByRole('group',{name:'Choose columns',exact:true}).getByRole('button',{name:'noise',exact:true}).click();
+  await page.getByRole('button',{name:'Add recipe step'}).click();
+  await page.getByRole('button',{name:'Preview changes'}).click();
+  await expect(page.getByRole('alert')).toContainText('Step 2 (fill)');
+  await expect(page.getByRole('button',{name:'Edit step 2',exact:true})).toBeVisible();
+  await page.getByRole('button',{name:'Remove recipe step 1'}).click();
+  await expect(page.getByRole('button',{name:'Edit step 2',exact:true})).toHaveCount(0);
+  await page.getByRole('button',{name:'Preview changes'}).click();
+  await expect(page.getByText('Up to date',{exact:true})).toBeVisible();
+});
+
 test('split summaries preserve tiny missing rates, false values and non-finite numeric evidence',async({page})=>{
   await openWorkbench(page);
   const training='value,flag,tiny\n,false,1e-9\n'+Array(2000).fill('0,false,1e-9\n').join('');
