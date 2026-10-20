@@ -2,14 +2,14 @@
 from __future__ import annotations
 
 import hashlib
-import html
-import json
 import math
 from itertools import combinations
 from pathlib import Path
 from typing import Any
 
 import polars as pl
+
+from datasetmedic.report import render_report as render_report  # noqa: PLC0414 -- public compatibility export
 
 MAX_ROWS = 2_000_000
 MAX_COLUMNS = 500
@@ -350,22 +350,6 @@ def execute_recipe(inputs: dict[str, str], recipe: dict, roles: dict, output: st
         else:
             frame.write_parquet(path)
     return summary
-
-
-def render_report(result: dict, names: dict) -> str:
-    esc = lambda x: html.escape(str(x))
-    cards = []
-    for f in result["findings"]:
-        cards.append(f"<article><small>{esc(f['severity'])} · {esc(', '.join(names.get(k, k) for k in f['datasets']))}</small>"
-                     f"<h2>{esc(f['title'])} <span>({f['count']})</span></h2><p>{esc(f['detail'])}</p>"
-                     f"<pre>{esc(json.dumps(f['examples'], indent=2, ensure_ascii=False))}</pre></article>")
-    profiles = "".join(f"<h2>{esc(names.get(k, k))}</h2><p>{p['rows']:,} rows · {len(p['columns'])} columns</p>"
-                       for k, p in result["profiles"].items())
-    return "<!doctype html><html lang='en'><meta charset='utf-8'><title>DatasetMedic report</title>" \
-        "<style>body{font:16px system-ui;max-width:960px;margin:48px auto;padding:24px;color:#183e36;background:#f6f7f2}" \
-        "article{background:white;padding:24px;margin:16px 0;border:1px solid #d6dfd5;border-radius:14px}" \
-        "pre{overflow:auto;font-size:12px}small,span{color:#60746c}</style><h1>DatasetMedic</h1>" \
-        f"<p>{esc(result['notice'])}</p>{profiles}{''.join(cards) or '<p>No findings from the selected checks.</p>'}</html>"
 
 
 def fingerprint(path: Path) -> str:

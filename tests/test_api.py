@@ -65,6 +65,11 @@ def test_demo_audit_preview_export_and_reproduce(client, tmp_path):
     bundle = tmp_path / "bundle"
     with zipfile.ZipFile(io.BytesIO(download.content)) as archive:
         assert {"reproduce.py", "recipe.json", "report.html", "requirements.txt"}.issubset(archive.namelist())
+        report = archive.read("report.html").decode("utf-8")
+        assert "Cleaned export" in report
+        assert "7 rows" in report
+        assert "Column profile for train.csv" in report
+        assert "<main id='report-main'" in report
         archive.extractall(bundle)
     manifest = json.loads((bundle / "recipe.json").read_text())
     sid = base.split("/")[-1]

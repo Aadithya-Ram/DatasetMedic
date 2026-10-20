@@ -75,7 +75,7 @@ print("Reproduced datasets written to", args.output)
 ''', encoding="utf-8")
                 names = {d["id"]: d["name"] for d in inputs}
                 report = audit(cleaned, config)
-                (output / "report.html").write_text(render_report(report, names), encoding="utf-8")
+                (output / "report.html").write_text(render_report(report, names, cleaned=True), encoding="utf-8")
                 (output / "summary.json").write_text(json.dumps(safe(summary), indent=2), encoding="utf-8")
                 (output / "README.txt").write_text(
                     "DatasetMedic export\n\nreport.html describes the CLEANED datasets.\n"
