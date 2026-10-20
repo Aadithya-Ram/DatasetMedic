@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Redesign standalone HTML reports with a skip link, section navigation, semantic profile/evidence tables, mobile scrolling and print styles.
+- Label exported reports as cleaned snapshots and keep wide examples readable field-by-field. Escape all names and values; use no scripts or external assets.
+
 ## 0.4.0 — October 20, 2026
 
 - Identify invalid recipe steps by number and operation, with an edit shortcut tied to the failed recipe snapshot.

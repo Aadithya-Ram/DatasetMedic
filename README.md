@@ -82,6 +82,14 @@ Screenshots show the real app with synthetic data. The import request was delibe
 
 The recovery screenshot deliberately applies text trimming to a numeric column in the synthetic demo. Choose **Edit step** to correct the operation, save and preview again. Source files stay unchanged.
 
+**On `main` (next release):** the standalone HTML report now includes keyboard navigation, column profiles, readable evidence tables and print styles. Wide examples show each field vertically. It works offline without scripts or external assets. These changes currently require the source installation; v0.4.0 remains preserved.
+
+<details><summary>Preview the improved offline report</summary>
+
+![HTML report from a synthetic cleaned export](docs/images/export-report.png)
+
+</details>
+
 ### What’s in an export?
 
 ```text

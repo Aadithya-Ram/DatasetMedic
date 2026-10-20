@@ -18,6 +18,8 @@ Imports validate the entire selected batch before copying, using file names, siz
 
 Split comparison tables use engine profile counts and each profile's own row total for missing percentages. Numeric summaries label mean/median and use the engine's finite-value statistics; categorical summaries label one most frequent value, including missing values and possible ties. Display rounding is explicit, and positive rates smaller than 0.1% show `<0.1%`. Type differences remain visible alongside descriptive summaries. This presentation adds no drift test or transformation logic and does not alter export/reproduction semantics. Scrollable comparison regions support keyboard navigation on small screens.
 
+`report.py` renders standalone HTML; `engine.render_report` remains a compatible public import. Reports contain no scripts or external assets. Names, captions, column labels and cell values are escaped, with generated identifiers for navigation and table labels. The export worker explicitly marks its report as a cleaned snapshot; direct audit reports default to an audit snapshot. Examples with more than eight fields use field/value tables; smaller examples use column tables. Reports retain the audit's sample limit and row-number semantics, include missing-rate denominators, and disclose rounding. Print styles are provided, but wide/large reports can span many pages. `node web/scripts/capture-report.mjs` captures a real report extracted from a synthetic cleaned export ZIP.
+
 ## Local setup
 
 Use Python 3.11+ and Node 22+. Install `.[dev]` in `.venv`, then run `npm ci` in `web`.
