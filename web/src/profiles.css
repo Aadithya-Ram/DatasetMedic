@@ -1,0 +1,12 @@
+.profile-tools{display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:18px 20px 0}
+.profile-tools .search-box{flex:1;min-width:180px}
+.profile-tools .search-box input{max-width:none;min-width:0;width:100%}
+.profile-tools .button,.profile-tools .text-button{font-size:11px}
+.profile-tools [aria-pressed=true]{background:#e7f0da;border-color:#6b864f;color:#244f36}
+.profile-pagination{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 20px 0;font-size:11px;color:#536547}
+.profile-pagination>div{display:flex;gap:5px}
+.profile-empty{padding:0 20px 20px;font-size:12px;color:#536547}
+.column-profiles .column-card{min-width:0}
+.column-profiles .column-card>div:first-child{flex-wrap:wrap;gap:6px}
+.column-profiles .column-card strong{overflow-wrap:anywhere;min-width:0}
+@media(max-width:700px){.profile-tools{padding:14px 12px 0;gap:10px}.profile-tools .search-box{flex-basis:100%}.profile-pagination{padding:12px 12px 0;align-items:flex-start}.column-profiles .column-grid{grid-template-columns:1fr}.profile-empty{padding:0 12px 14px}}

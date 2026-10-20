@@ -2,6 +2,60 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 
+test('500-column profiles support filtered pagination and reset between datasets and audits',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await openWorkbench(page);
+  const names=[...Array.from({length:498},(_,i)=>`field_${String(i).padStart(3,'0')}`),'東京尺度','all_empty'];
+  const csv=[names.join(','),names.map((_,i)=>i===499?'':i===498?'東京':String(i)).join(','),names.map((_,i)=>i>=498||i%2?'':String(i+1)).join(',')].join('\n');
+  await page.locator('#file-import').setInputFiles([
+    {name:'wide-profiles.csv',mimeType:'text/csv',buffer:Buffer.from(csv)},
+    {name:'other.csv',mimeType:'text/csv',buffer:Buffer.from('code,value\nA,1\nB,2\n')},
+  ]);
+  await Promise.all([page.waitForResponse(response=>response.url().endsWith('/result') && response.ok()), page.getByRole('button',{name:'Run health check',exact:true}).click()]);
+  const profiles=page.getByRole('region',{name:'Column profiles',exact:true});
+  await expect(profiles.getByRole('status')).toHaveText('1–24 of 500 matching columns · 500 total');
+  await expect(profiles.getByRole('article')).toHaveCount(24);
+  await profiles.getByRole('button',{name:'Next column page'}).focus();
+  await page.keyboard.press('Enter');
+  await expect(profiles.getByRole('button',{name:'Next column page'})).toBeFocused();
+  await expect(profiles.getByRole('status')).toHaveText('25–48 of 500 matching columns · 500 total');
+  await expect(profiles.getByRole('article',{name:'Column field_024',exact:true})).toBeVisible();
+  await profiles.getByRole('button',{name:'With missing values'}).click();
+  await expect(profiles.getByRole('button',{name:'With missing values',pressed:true})).toBeVisible();
+  await expect(profiles.getByRole('status')).toHaveText('1–24 of 251 matching columns · 500 total');
+  await profiles.getByRole('textbox',{name:'Search column profiles'}).fill('FIELD_497');
+  await expect(profiles.getByRole('article',{name:'Column field_497',exact:true})).toContainText('1 missing');
+  await expect(profiles.getByRole('status')).toHaveText('1–1 of 1 matching columns · 500 total');
+  await expect(profiles.getByRole('button',{name:'Next column page'})).toBeDisabled();
+  await profiles.getByRole('textbox',{name:'Search column profiles'}).fill('東京');
+  await expect(profiles.getByRole('article',{name:'Column 東京尺度',exact:true})).toBeVisible();
+  await profiles.getByRole('textbox',{name:'Search column profiles'}).fill('all_empty');
+  await expect(profiles.getByRole('article',{name:'Column all_empty',exact:true})).toContainText('2 missing');
+  await profiles.getByRole('textbox',{name:'Search column profiles'}).fill('no_such_column');
+  await expect(profiles.getByRole('article')).toHaveCount(0);
+  await expect(profiles.getByText(/No column names match/)).toBeVisible();
+  expect((await new AxeBuilder({page}).include('.column-profiles').withTags(['wcag2a','wcag2aa']).analyze()).violations).toEqual([]);
+  await profiles.getByRole('button',{name:'Reset column filters'}).click();
+  await expect(profiles.getByRole('status')).toHaveText('1–24 of 500 matching columns · 500 total');
+  expect((await new AxeBuilder({page}).include('.column-profiles').withTags(['wcag2a','wcag2aa']).analyze()).violations).toEqual([]);
+  await profiles.getByRole('textbox',{name:'Search column profiles'}).fill('all_empty');
+  await page.getByLabel('Dataset to inspect').selectOption({label:'other.csv'});
+  await expect(profiles.getByRole('textbox',{name:'Search column profiles'})).toHaveValue('');
+  await expect(profiles.getByRole('status')).toHaveText('1–2 of 2 matching columns · 2 total');
+  await profiles.getByRole('button',{name:'With missing values'}).click();
+  await expect(profiles.getByRole('status')).toHaveText('0 matching columns · 2 total');
+  await page.getByLabel('Dataset to inspect').selectOption({label:'wide-profiles.csv'});
+  await expect(profiles.getByRole('button',{name:'With missing values',pressed:false})).toBeVisible();
+  await profiles.getByRole('textbox',{name:'Search column profiles'}).fill('東京');
+  await Promise.all([page.waitForResponse(response=>response.url().endsWith('/result') && response.ok()), page.getByRole('button',{name:'Update health check'}).click()]);
+  await expect(profiles.getByRole('textbox',{name:'Search column profiles'})).toHaveValue('');
+  await expect(profiles.getByRole('status')).toHaveText('1–24 of 500 matching columns · 500 total');
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.getByText('Preview source records',{exact:true}).click();
+  await expect(page.getByRole('columnheader',{name:'field_497',exact:true})).toHaveCount(1);
+});
+
 test('failed recipe preview identifies its step and opens that step for repair',async({page})=>{
   await page.setViewportSize({width:390,height:844});
   await openWorkbench(page);

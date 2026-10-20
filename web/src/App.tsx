@@ -7,6 +7,8 @@ import { RecipeList, STEP_TITLES } from './RecipeList';
 import { ColumnPicker } from './ColumnPicker';
 import { importProblem, importSize } from './imports';
 import { SplitComparisons } from './SplitComparisons';
+import { ColumnProfiles } from './ColumnProfiles';
+import type { Column } from './ColumnProfiles';
 import type { Comparison } from './SplitComparisons';
 
 type Config = components['schemas']['AuditConfig'];
@@ -15,7 +17,6 @@ type JobStatus = components['schemas']['JobStatus'];
 type Kind = 'audit' | 'preview' | 'export';
 type Dataset = { id: string; name: string; size: number };
 type Row = Record<string, unknown>;
-type Column = { name: string; dtype: string; missing: number; unique: number; examples: unknown[]; stats?: Record<string, number | null>; top?: {value: unknown; count: number}[] };
 type Profile = { rows: number; columns: Column[]; sample: Row[] };
 type Finding = { id: string; kind: string; title: string; detail: string; datasets: string[]; count: number; examples: Row[]; severity: string; columns: string[] };
 type Change = {step: number; dataset: string; op: string; affected_rows: number; conversion_failures: Record<string, number>; before_rows: number; after_rows: number};
@@ -317,7 +318,7 @@ export default function App() {
             {!filteredFindings.length&&<div className="no-findings"><CheckCheck size={24}/><p>{total?'No findings match this page’s filters.':'No findings from the selected checks.'}</p></div>}
             {total>20&&<div className="pagination"><span>{offset+1}–{Math.min(offset+20,total)} of {total} findings · Filters apply to this page</span><button className="icon-button" disabled={offset===0} onClick={()=>void loadFindings(auditId,Math.max(0,offset-20)).catch(e=>setError(e.message))} aria-label="Previous findings page"><ChevronLeft size={17}/></button><button className="icon-button" disabled={offset+20>=total} onClick={()=>void loadFindings(auditId,offset+20).catch(e=>setError(e.message))} aria-label="Next findings page"><ChevronRight size={17}/></button></div>}
             <div className="info-note"><CircleHelp size={16}/><p>{auditResult.notice} {riskCount>0&&'Review split findings before training.'}</p></div>
-            <Reveal><div className="profile-panel"><div className="panel-title"><span><Columns3 size={18}/> The shape of your data</span><select aria-label="Dataset to inspect" value={activeDataset} onChange={e=>setActiveDataset(e.target.value)}>{datasets.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></div><div className="column-grid">{profile?.columns.map(col=><div className="column-card" key={col.name}><div><strong>{col.name}</strong><span>{col.dtype}</span></div><div className="missing-meter"><span style={{width:`${Math.max(col.missing/profile.rows*100,0)}%`}}/></div><p><span>{pretty(col.missing)} missing</span><span>{pretty(col.unique)} distinct</span></p>{col.stats?<div className="column-stat"><span>MEAN</span><strong>{col.stats.mean==null?'—':Number(col.stats.mean.toFixed(2))}</strong><span>MEDIAN</span><strong>{show(col.stats.median)}</strong></div>:<div className="mini-bars">{col.top?.slice(0,3).map((v,i)=><div key={i}><span title={show(v.value)}>{show(v.value)}</span><div><i style={{width:`${v.count/profile.rows*100}%`}}/></div><small>{v.count}</small></div>)}</div>}</div>)}</div><details className="sample-details"><summary>Preview source records <ChevronDown size={15}/></summary><DataTable rows={profile?.sample||[]}/></details></div></Reveal>
+            <Reveal><div className="profile-panel"><div className="panel-title"><span><Columns3 size={18}/> The shape of your data</span><select aria-label="Dataset to inspect" value={activeDataset} onChange={e=>setActiveDataset(e.target.value)}>{datasets.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></div>{profile&&<ColumnProfiles key={`${auditId}-${activeDataset}`} columns={profile.columns} rows={profile.rows}/>}<details className="sample-details"><summary>Preview source records <ChevronDown size={15}/></summary><DataTable rows={profile?.sample||[]}/></details></div></Reveal>
             {!!auditResult.comparisons?.length&&<Reveal><SplitComparisons pairs={auditResult.comparisons} profiles={auditResult.profiles} names={names}/></Reveal>}
           </>}
         </section>
