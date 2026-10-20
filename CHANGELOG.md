@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Search column profiles by name, filter for missing values and browse 24 cards per page. Reset filters automatically when switching datasets or rerunning an audit.
 - Redesign standalone HTML reports with a skip link, section navigation, semantic profile/evidence tables, mobile scrolling and print styles.
 - Label exported reports as cleaned snapshots and keep wide examples readable field-by-field. Escape all names and values; use no scripts or external assets.
 

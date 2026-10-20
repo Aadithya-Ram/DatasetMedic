@@ -84,6 +84,14 @@ The recovery screenshot deliberately applies text trimming to a numeric column i
 
 **On `main` (next release):** the standalone HTML report now includes keyboard navigation, column profiles, readable evidence tables and print styles. Wide examples show each field vertically. It works offline without scripts or external assets. These changes currently require the source installation; v0.4.0 remains preserved.
 
+The workbench also supports searching all column profiles by name, showing only columns with missing values, and browsing 24 cards per page. Counts show both matches and the full schema. These display filters leave data and cleaning selections unchanged; switching datasets or completing a new audit resets them.
+
+<details><summary>Inspect a wide schema</summary>
+
+![Actual missing-values profile view for a synthetic 50-column CSV](docs/images/column-profiles.png)
+
+</details>
+
 <details><summary>Preview the improved offline report</summary>
 
 ![HTML report from a synthetic cleaned export](docs/images/export-report.png)
