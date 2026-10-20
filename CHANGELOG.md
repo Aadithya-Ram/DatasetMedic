@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Compare missing-value rates using each split's own row total, with named dataset headers, explicit numeric/categorical summaries and type differences.
+- Keep positive rates below 0.1% visible and distinguish missing category values from zero/false values.
+
 - Wait for local session readiness before browser tests select files; cover delayed session startup explicitly.
 - Preserve browser failure screenshots, traces and error context in CI for seven days.
 

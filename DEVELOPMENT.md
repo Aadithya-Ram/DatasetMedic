@@ -12,6 +12,8 @@ Column pickers share case-insensitive name search, selected-only review and expl
 
 Imports validate the entire selected batch before copying, using file names, sizes and existing session totals. These browser checks provide early feedback; the server independently enforces its limits. During copying, the interface announces the current file and batch position without claiming byte-level progress. A later request failure stops the batch, retains confirmed successful imports, and reports which file failed. Retry only the remaining files. File-content/row/schema validation still happens during analysis; a supported extension does not guarantee valid data.
 
+Split comparison tables use engine profile counts and each profile's own row total for missing percentages. Numeric summaries label mean/median and use the engine's finite-value statistics; categorical summaries label one most frequent value, including missing values and possible ties. Display rounding is explicit, and positive rates smaller than 0.1% show `<0.1%`. Type differences remain visible alongside descriptive summaries. This presentation adds no drift test or transformation logic and does not alter export/reproduction semantics. Scrollable comparison regions support keyboard navigation on small screens.
+
 ## Local setup
 
 Use Python 3.11+ and Node 22+. Install `.[dev]` in `.venv`, then run `npm ci` in `web`.

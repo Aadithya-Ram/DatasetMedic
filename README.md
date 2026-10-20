@@ -74,6 +74,10 @@ Failed type conversions create null values and are counted in the preview. Expor
 
 Screenshots show the real app with synthetic data. The import request was deliberately delayed to capture its progress state.
 
+**On `main` (next release):** split comparisons show missing percentages with counts and each dataset’s own row total. Named headers, explicit mean/median or most-frequent-value labels, and type differences make unequal splits easier to interpret. These additions currently require the source installation; the v0.3.0 download above is preserved.
+
+![Split comparisons in the current source build](docs/images/split-comparison.png)
+
 ### What’s in an export?
 
 ```text
