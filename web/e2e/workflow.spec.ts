@@ -2,6 +2,60 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 
+test('split summaries preserve tiny missing rates, false values and non-finite numeric evidence',async({page})=>{
+  await openWorkbench(page);
+  const training='value,flag,tiny\n,false,1e-9\n'+Array(2000).fill('0,false,1e-9\n').join('');
+  await page.locator('#file-import').setInputFiles([
+    {name:'large.csv',mimeType:'text/csv',buffer:Buffer.from(training)},
+    {name:'small.csv',mimeType:'text/csv',buffer:Buffer.from('value,flag,tiny\ninf,false,1e-9\n-inf,false,1e-9\n')},
+  ]);
+  await page.getByLabel('Split role for large.csv').selectOption('train');
+  await page.getByLabel('Split role for small.csv').selectOption('test');
+  await page.getByRole('button',{name:'Run health check',exact:true}).click();
+  const table=page.locator('.split-comparisons').getByRole('table');
+  const value=table.getByRole('row').filter({has:page.getByRole('rowheader',{name:/^value/})});
+  await expect(value.getByRole('cell').nth(0)).toHaveText('<0.1%1 / 2,001 rows');
+  await expect(value.getByRole('cell').nth(3)).toHaveText('No finite numeric values');
+  const flag=table.getByRole('row').filter({has:page.getByRole('rowheader',{name:/^flag/})});
+  await expect(flag.getByRole('cell').nth(3)).toContainText('Most frequent: false');
+  await expect(flag.getByRole('cell').nth(3)).toContainText('2 / 2 rows · 100%');
+  const tiny=table.getByRole('row').filter({has:page.getByRole('rowheader',{name:/^tiny/})});
+  await expect(tiny.getByRole('cell').nth(3)).toContainText('Mean: 1E-9');
+});
+
+test('split comparisons use each split denominator and label summaries and type differences',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await openWorkbench(page);
+  await page.locator('#file-import').setInputFiles([
+    {name:'training.csv',mimeType:'text/csv',buffer:Buffer.from('value,city,mixed\n0,Pune,1\n0,Pune,2\n1,Pune,3\n-1,Pune,4\n,Pune,5\n,,6\n2,,7\n-2,,8\n')},
+    {name:'evaluation.csv',mimeType:'text/csv',buffer:Buffer.from('value,city,mixed\n0,,a\n0,,b\n,,c\n,,d\n')},
+  ]);
+  await page.getByLabel('Split role for training.csv').selectOption('train');
+  await page.getByLabel('Split role for evaluation.csv').selectOption('test');
+  await page.getByRole('button',{name:'Run health check',exact:true}).click();
+  const panel=page.locator('.split-comparisons');
+  await expect(panel).toContainText('training.csv: 8 rows · evaluation.csv: 4 rows · 3 common columns');
+  const table=panel.getByRole('table');
+  await expect(table.getByRole('columnheader',{name:'training.csv missing',exact:true})).toBeVisible();
+  const value=table.getByRole('row').filter({has:page.getByRole('rowheader',{name:/^value/})});
+  await expect(value.getByRole('cell').nth(0)).toHaveText('25%2 / 8 rows');
+  await expect(value.getByRole('cell').nth(1)).toHaveText('50%2 / 4 rows');
+  await expect(value.getByRole('cell').nth(2)).toContainText('Mean: 0');
+  await expect(value.getByRole('cell').nth(2)).toContainText('Median: 0');
+  const city=table.getByRole('row').filter({has:page.getByRole('rowheader',{name:/^city/})});
+  await expect(city.getByRole('cell').nth(2)).toContainText('Most frequent: "Pune"');
+  await expect(city.getByRole('cell').nth(3)).toContainText('Most frequent: Missing value');
+  await expect(city.getByRole('cell').nth(3)).toContainText('4 / 4 rows · 100%');
+  const mixed=table.getByRole('row').filter({has:page.getByRole('rowheader',{name:/^mixed/})});
+  await expect(mixed.getByRole('rowheader')).toContainText('Types differ: Int64 / String');
+  await expect(panel).toContainText('not statistical drift tests');
+  const region=panel.getByRole('region');
+  await region.focus();await expect(region).toBeFocused();
+  expect((await new AxeBuilder({page}).withTags(['wcag2a','wcag2aa']).analyze()).violations).toEqual([]);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+});
+
 // setInputFiles does not wait for an enabled input. Wait for the local session,
 // just as a user must before opening the file picker.
 async function openWorkbench(page: Page) {

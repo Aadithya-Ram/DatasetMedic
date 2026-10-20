@@ -6,6 +6,8 @@ import { version as appVersion } from '../package.json';
 import { RecipeList, STEP_TITLES } from './RecipeList';
 import { ColumnPicker } from './ColumnPicker';
 import { importProblem, importSize } from './imports';
+import { SplitComparisons } from './SplitComparisons';
+import type { Comparison } from './SplitComparisons';
 
 type Config = components['schemas']['AuditConfig'];
 type Step = components['schemas']['Step'];
@@ -16,7 +18,7 @@ type Column = { name: string; dtype: string; missing: number; unique: number; ex
 type Profile = { rows: number; columns: Column[]; sample: Row[] };
 type Finding = { id: string; kind: string; title: string; detail: string; datasets: string[]; count: number; examples: Row[]; severity: string; columns: string[] };
 type Change = {step: number; dataset: string; op: string; affected_rows: number; conversion_failures: Record<string, number>; before_rows: number; after_rows: number};
-type Result = {profiles: Record<string, Profile>; finding_count?: number; changes?: Change[]; fitted_values?: Record<string, Row>; comparisons?: { datasets: string[]; columns: {name: string; left: Column; right: Column}[] }[]; notice?: string};
+type Result = {profiles: Record<string, Profile>; finding_count?: number; changes?: Change[]; fitted_values?: Record<string, Row>; comparisons?: Comparison[]; notice?: string};
 const EMPTY_CONFIG: Config = {roles: {}, target: null, groups: [], features: []};
 
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
@@ -310,7 +312,7 @@ export default function App() {
             {total>20&&<div className="pagination"><span>{offset+1}–{Math.min(offset+20,total)} of {total} findings · Filters apply to this page</span><button className="icon-button" disabled={offset===0} onClick={()=>void loadFindings(auditId,Math.max(0,offset-20)).catch(e=>setError(e.message))} aria-label="Previous findings page"><ChevronLeft size={17}/></button><button className="icon-button" disabled={offset+20>=total} onClick={()=>void loadFindings(auditId,offset+20).catch(e=>setError(e.message))} aria-label="Next findings page"><ChevronRight size={17}/></button></div>}
             <div className="info-note"><CircleHelp size={16}/><p>{auditResult.notice} {riskCount>0&&'Review split findings before training.'}</p></div>
             <Reveal><div className="profile-panel"><div className="panel-title"><span><Columns3 size={18}/> The shape of your data</span><select aria-label="Dataset to inspect" value={activeDataset} onChange={e=>setActiveDataset(e.target.value)}>{datasets.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></div><div className="column-grid">{profile?.columns.map(col=><div className="column-card" key={col.name}><div><strong>{col.name}</strong><span>{col.dtype}</span></div><div className="missing-meter"><span style={{width:`${Math.max(col.missing/profile.rows*100,0)}%`}}/></div><p><span>{pretty(col.missing)} missing</span><span>{pretty(col.unique)} distinct</span></p>{col.stats?<div className="column-stat"><span>MEAN</span><strong>{col.stats.mean==null?'—':Number(col.stats.mean.toFixed(2))}</strong><span>MEDIAN</span><strong>{show(col.stats.median)}</strong></div>:<div className="mini-bars">{col.top?.slice(0,3).map((v,i)=><div key={i}><span title={show(v.value)}>{show(v.value)}</span><div><i style={{width:`${v.count/profile.rows*100}%`}}/></div><small>{v.count}</small></div>)}</div>}</div>)}</div><details className="sample-details"><summary>Preview source records <ChevronDown size={15}/></summary><DataTable rows={profile?.sample||[]}/></details></div></Reveal>
-            {!!auditResult.comparisons?.length&&<Reveal><div className="profile-panel"><div className="panel-title"><span><Layers3 size={18}/> Between the splits</span><span className="muted">Descriptive comparisons</span></div>{auditResult.comparisons.map((pair,i)=><div className="comparison" key={i}><h4>{pair.datasets.map(k=>names[k]).join(' ↔ ')}</h4><div className="table-wrap"><table><thead><tr><th>Column</th><th>Left missing</th><th>Right missing</th><th>Left mean / top value</th><th>Right mean / top value</th></tr></thead><tbody>{pair.columns.map(c=><tr key={c.name}><td>{c.name}</td><td>{c.left.missing}</td><td>{c.right.missing}</td><td>{show(c.left.stats?.mean ?? c.left.top?.[0]?.value)}</td><td>{show(c.right.stats?.mean ?? c.right.top?.[0]?.value)}</td></tr>)}</tbody></table></div></div>)}<p className="muted comparison-disclaimer">These summaries describe differences; they are not statistical drift tests.</p></div></Reveal>}
+            {!!auditResult.comparisons?.length&&<Reveal><SplitComparisons pairs={auditResult.comparisons} profiles={auditResult.profiles} names={names}/></Reveal>}
           </>}
         </section>
 

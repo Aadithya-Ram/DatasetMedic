@@ -1,0 +1,10 @@
+.comparison-sizes{font-size:11px;line-height:1.8;color:#536547;margin:0 0 13px;overflow-wrap:anywhere}
+.split-comparisons h4{overflow-wrap:anywhere}
+.split-comparisons th,.split-comparisons td{vertical-align:top;min-width:145px;max-width:300px;white-space:normal;overflow-wrap:anywhere}
+.split-comparisons thead th{font-size:10px;line-height:1.7}
+.split-comparisons tbody th{font-weight:400;text-transform:none;letter-spacing:normal}
+.split-comparisons td>strong,.split-comparisons td>span,.split-comparisons th>strong{display:block;font-size:12px;line-height:1.8}
+.split-comparisons td>small,.split-comparisons th>small{display:block;font-size:10px;line-height:1.8;color:#536547;margin-top:3px}
+.comparison-type-difference{color:#855d2d}
+.comparison-value{max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.split-comparisons .comparison-disclaimer{padding:0 24px 20px;line-height:1.9}
