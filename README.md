@@ -86,6 +86,14 @@ The recovery screenshot deliberately applies text trimming to a numeric column i
 
 The workbench also supports searching all column profiles by name, showing only columns with missing values, and browsing 24 cards per page. Counts show both matches and the full schema. These display filters leave data and cleaning selections unchanged; switching datasets or completing a new audit resets them.
 
+Finding search and severity filters now cover the **whole audit**, including later pages. Search titles, explanations or column names; counts distinguish matching findings from the audit total. Example cell values and filenames are outside this search. Failed page requests have a retry control.
+
+<details><summary>Find a result beyond the first page</summary>
+
+![Actual full-audit search in a synthetic 31-finding audit](docs/images/findings-search.png)
+
+</details>
+
 <details><summary>Inspect a wide schema</summary>
 
 ![Actual missing-values profile view for a synthetic 50-column CSV](docs/images/column-profiles.png)
