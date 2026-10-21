@@ -37,6 +37,36 @@ def wait(client, base, jid):
     pytest.fail("Worker failed to complete within 15 seconds")
 
 
+def test_findings_filter_full_audit_before_pagination_and_preserve_snapshot(client):
+    from datasetmedic.engine import audit
+
+    base = create_session(client)
+    sid = base.rsplit("/", 1)[1]
+    frame = pl.DataFrame({**{f"field_{index:02}": [1, 1] for index in range(45)}, "Straße東京": [None, 1]})
+    snapshot = audit({"source": frame}, {})
+    folder = client.app.state.root / sid / "filtered"
+    folder.mkdir()
+    result_file = folder / "result.json"
+    result_file.write_text(json.dumps(snapshot), encoding="utf-8")
+    original = result_file.read_bytes()
+    client.app.state.sessions[sid]["jobs"]["filtered"] = {"folder": folder, "kind": "audit"}
+    url = base + "/jobs/filtered/findings"
+    all_items = client.get(url, params={"limit": 100}).json()
+    assert all_items["total"] == len(snapshot["findings"]) > 40
+    expected = [finding for finding in snapshot["findings"] if finding["severity"] == "info"]
+    page = client.get(url, params={"query": "COLUMN", "severity": "info", "offset": 20, "limit": 3}).json()
+    assert page == {"total": len(expected), "items": expected[20:23]}
+    unicode = client.get(url, params={"query": "  STRASSE東京  ", "severity": "warning"}).json()
+    assert unicode["total"] == 1
+    assert unicode["items"][0]["kind"] == "missing"
+    assert client.get(url, params={"query": "no such column"}).json() == {"total": 0, "items": []}
+    assert client.get(url, params={"offset": 10000}).json()["items"] == []
+    assert client.get(url, params={"offset": -1, "limit": 0}).json()["items"] == snapshot["findings"][:1]
+    assert client.get(url, params={"severity": "invalid"}).status_code == 422
+    assert client.get(url, params={"query": "x" * 201}).status_code == 422
+    assert result_file.read_bytes() == original
+
+
 def test_demo_audit_preview_export_and_reproduce(client, tmp_path):
     base = create_session(client)
     datasets = client.post(base + "/demo").json()

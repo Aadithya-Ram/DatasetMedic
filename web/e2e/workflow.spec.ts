@@ -2,6 +2,75 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 
+async function auditManyFindings(page: Page) {
+  await openWorkbench(page);
+  const names=[...Array.from({length:30},(_,i)=>`field_${String(i).padStart(2,'0')}`),'東京'];
+  const row=names.map(()=>1).join(',');
+  await page.locator('#file-import').setInputFiles({name:'many-findings.csv',mimeType:'text/csv',buffer:Buffer.from(`${names.join(',')}\n${row}\n${row}\n`)});
+  await page.getByRole('button',{name:'Run health check',exact:true}).click();
+  await expect(page.locator('.pagination')).toContainText('1–20 of 32 matching findings');
+}
+
+test('findings search and severity filters cover every page of the audit',async({page})=>{
+  await page.setViewportSize({width:390,height:844});
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await auditManyFindings(page);
+  await page.getByRole('button',{name:'Next findings page'}).click();
+  await expect(page.locator('.pagination')).toContainText('21–32 of 32 matching findings');
+  await page.getByRole('button',{name:'Observations',exact:true}).click();
+  await expect(page.locator('.pagination')).toContainText('1–20 of 31 matching findings');
+  await page.getByRole('textbox',{name:'Search all findings'}).fill('FIELD_29');
+  await expect(page.getByRole('button',{name:/Constant or empty column: field_29/})).toBeVisible();
+  await expect(page.locator('.pagination')).toContainText('1–1 of 1 matching findings · 32 total');
+  await page.getByRole('textbox',{name:'Search all findings'}).fill('東京');
+  await expect(page.getByRole('button',{name:/Constant or empty column: 東京/})).toBeVisible();
+  await page.getByRole('button',{name:'Attention',exact:true}).click();
+  await expect(page.getByText('No findings match these filters.',{exact:true})).toBeVisible();
+  await page.getByRole('textbox',{name:'Search all findings'}).fill('');
+  await expect(page.getByRole('button',{name:/Repeated records/})).toBeVisible();
+  await expect(page.locator('.findings-list article')).toHaveCount(1);
+  await expect(page.getByRole('button',{name:'Next findings page'})).toBeDisabled();
+  expect((await new AxeBuilder({page}).include('#findings').withTags(['wcag2a','wcag2aa']).analyze()).violations).toEqual([]);
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth)).toBe(true);
+  await page.getByRole('button',{name:'Update health check'}).click();
+  await expect(page.getByRole('textbox',{name:'Search all findings'})).toHaveValue('');
+  await expect(page.getByRole('button',{name:'All findings',pressed:true})).toBeVisible();
+});
+
+test('obsolete findings requests cannot replace new filters and failed requests can retry',async({page})=>{
+  await auditManyFindings(page);
+  let release!:()=>void, started!:()=>void, finished!:()=>void;
+  const gate=new Promise<void>(resolve=>{release=resolve;});
+  const requested=new Promise<void>(resolve=>{started=resolve;});
+  const handled=new Promise<void>(resolve=>{finished=resolve;});
+  let fail=true;
+  await page.route('**/findings?*',async route=>{
+    const query=new URL(route.request().url()).searchParams.get('query');
+    if(query==='field_0') {
+      const response=await route.fetch();started();await gate;
+      try {await route.fulfill({response});} catch { /* The obsolete fetch may already be aborted. */ }
+      finally {finished();}
+    } else if(query==='broken'&&fail) {fail=false;await route.fulfill({status:503,body:'Unavailable'});}
+    else await route.continue();
+  });
+  try {
+    await page.getByRole('textbox',{name:'Search all findings'}).fill('field_0');
+    await requested;
+    await expect(page.locator('.pagination')).toContainText('Loading findings');
+    await expect(page.locator('.findings-list article')).toHaveCount(0);
+    await expect(page.getByText('No findings match these filters.',{exact:true})).toHaveCount(0);
+    await page.getByRole('textbox',{name:'Search all findings'}).fill('field_29');
+    await expect(page.getByRole('button',{name:/Constant or empty column: field_29/})).toBeVisible();
+  } finally {release();await handled;}
+  await expect(page.locator('.findings-list article')).toHaveCount(1);
+  await page.getByRole('textbox',{name:'Search all findings'}).fill('broken');
+  await expect(page.getByRole('alert')).toContainText('Could not load findings');
+  await expect(page.getByText('No findings match these filters.',{exact:true})).toHaveCount(0);
+  await page.getByRole('button',{name:'Retry findings',exact:true}).click();
+  await expect(page.getByText('No findings match these filters.',{exact:true})).toBeVisible();
+  await expect(page.getByRole('alert')).toHaveCount(0);
+});
+
 test('500-column profiles support filtered pagination and reset between datasets and audits',async({page})=>{
   await page.setViewportSize({width:390,height:844});
   await page.emulateMedia({reducedMotion:'reduce'});

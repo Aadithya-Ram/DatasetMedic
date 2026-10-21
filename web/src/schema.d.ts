@@ -657,6 +657,8 @@ export interface operations {
             query?: {
                 offset?: number;
                 limit?: number;
+                query?: string;
+                severity?: "all" | "danger" | "warning" | "info";
             };
             header?: never;
             path: {

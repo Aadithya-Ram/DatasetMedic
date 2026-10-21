@@ -459,6 +459,33 @@
               "default": 20,
               "title": "Limit"
             }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "maxLength": 200,
+              "default": "",
+              "title": "Query"
+            }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "all",
+                "danger",
+                "warning",
+                "info"
+              ],
+              "type": "string",
+              "default": "all",
+              "title": "Severity"
+            }
           }
         ],
         "responses": {

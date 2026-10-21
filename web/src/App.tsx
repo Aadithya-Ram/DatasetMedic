@@ -8,6 +8,7 @@ import { ColumnPicker } from './ColumnPicker';
 import { importProblem, importSize } from './imports';
 import { SplitComparisons } from './SplitComparisons';
 import { ColumnProfiles } from './ColumnProfiles';
+import { useFindings } from './useFindings';
 import type { Column } from './ColumnProfiles';
 import type { Comparison } from './SplitComparisons';
 
@@ -18,7 +19,6 @@ type Kind = 'audit' | 'preview' | 'export';
 type Dataset = { id: string; name: string; size: number };
 type Row = Record<string, unknown>;
 type Profile = { rows: number; columns: Column[]; sample: Row[] };
-type Finding = { id: string; kind: string; title: string; detail: string; datasets: string[]; count: number; examples: Row[]; severity: string; columns: string[] };
 type Change = {step: number; dataset: string; op: string; affected_rows: number; conversion_failures: Record<string, number>; before_rows: number; after_rows: number};
 type Result = {profiles: Record<string, Profile>; finding_count?: number; changes?: Change[]; fitted_values?: Record<string, Row>; comparisons?: Comparison[]; notice?: string};
 const EMPTY_CONFIG: Config = {roles: {}, target: null, groups: [], features: []};
@@ -70,9 +70,7 @@ export default function App() {
   const [config, setConfig] = useState<Config>(EMPTY_CONFIG);
   const [auditResult, setAuditResult] = useState<Result | null>(null);
   const [auditId, setAuditId] = useState('');
-  const [findings, setFindings] = useState<Finding[]>([]);
   const [offset, setOffset] = useState(0);
-  const [total, setTotal] = useState(0);
   const [openFinding, setOpenFinding] = useState('');
   const [filter, setFilter] = useState('all');
   const [activeDataset, setActiveDataset] = useState('');
@@ -113,7 +111,9 @@ export default function App() {
   const columnNames = profile?.columns.map(c => c.name) || [];
   const names = Object.fromEntries(datasets.map(d => [d.id, d.name]));
   const numberRows = Object.values(profiles).reduce((n,p) => n+p.rows,0);
-  const riskCount = findings.filter(f => f.severity === 'danger').length;
+  const total = auditResult?.finding_count || 0;
+  const findingPage = useFindings(base, auditId, offset, search, filter);
+  const findings = findingPage.items;
 
   useEffect(() => {
     let disposed = false;
@@ -136,10 +136,6 @@ export default function App() {
   useEffect(() => { setExportId(''); setConfirmExport(false); }, [currentRecipeKey, format]);
   function navigate(id: string) {document.getElementById(id)?.scrollIntoView({behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'}); setActiveSection(id);}
   function changeConfig(next: Config) {setConfig(next); setNotice(auditResult ? 'Settings changed. Run the audit again to update findings.' : '');}
-  async function loadFindings(id: string, start = 0) {
-    const data = await api<{total:number;items:Finding[]}>(`${base}/jobs/${id}/findings?offset=${start}&limit=20`);
-    setFindings(data.items);setTotal(data.total);setOffset(start);
-  }
   async function run(kind: Kind, useConfig = config) {
     if (!sid || busy) return;
     setError('');setRecipeFailure(null);setNotice('');setBusy(true);cancelled.current=false;
@@ -161,7 +157,7 @@ export default function App() {
       }
       if (cancelled.current) return;
       const result = await api<Result>(`${base}/jobs/${created.id}/result`);
-      if (kind === 'audit') {setAuditResult(result);setAuditId(created.id);await loadFindings(created.id);setActiveDataset(datasets[0]?.id || Object.keys(result.profiles)[0]);navigate('findings');}
+      if (kind === 'audit') {setAuditResult(result);setAuditId(created.id);setOffset(0);setSearch('');setFilter('all');setOpenFinding('');setActiveDataset(datasets[0]?.id || Object.keys(result.profiles)[0]);navigate('findings');}
       else if (kind === 'preview') {setPreview(result);setPreviewKey(JSON.stringify({steps, config:useConfig, datasets:datasets.map(d=>d.id)}));setNotice('Preview ready. Review the changes below before exporting.');}
       else {setExportId(created.id);setNotice('Your export is ready. Download it below.');}
     } catch(e) {setError((e as Error).message);}
@@ -194,7 +190,7 @@ export default function App() {
         const body = new FormData();body.append('file',file);body.append('separator',separator);
         const data = await api<Dataset>(`${base}/imports`,{method:'POST',body});
         next = [...next,data];setDatasets(next);imported++;
-        setAuditResult(null);setAuditId('');setFindings([]);setTotal(0);setPreview(null);setExportId('');
+        setAuditResult(null);setAuditId('');setPreview(null);setExportId('');
       }
       setNotice(`${imported} ${imported===1?'file imported':'files imported'}. Choose split roles below, then run your audit.`);
     } catch(e) {
@@ -219,7 +215,7 @@ export default function App() {
     try {
       await api(base,{method:'DELETE'});
       const next = await api<{id:string}>('/api/sessions',{method:'POST'});
-      setSid(next.id);sidRef.current=next.id;setDatasets([]);setConfig(EMPTY_CONFIG);setAuditResult(null);setAuditId('');setFindings([]);setTotal(0);setSteps([]);resetStepForm();setPreview(null);setExportId('');setNotice('Session cleared. Temporary copies and results have been deleted.');
+      setSid(next.id);sidRef.current=next.id;setDatasets([]);setConfig(EMPTY_CONFIG);setAuditResult(null);setAuditId('');setSteps([]);resetStepForm();setPreview(null);setExportId('');setNotice('Session cleared. Temporary copies and results have been deleted.');
     } catch(e) {setError((e as Error).message);} finally {setBusy(false);}
   }
   function resetStepForm() {
@@ -277,7 +273,7 @@ export default function App() {
       focusStep(index, 'edit');
     }
   }
-  const filteredFindings = findings.filter(f => (filter==='all'|| f.severity===filter) && `${f.title} ${f.detail}`.toLowerCase().includes(search.toLowerCase()));
+  const filteredFindings = findings;
   const failedConversions = preview?.changes?.reduce((sum,c) => sum + Object.values(c.conversion_failures).reduce((a,b)=>a+b,0),0) || 0;
 
   return <div className="app-shell">
@@ -313,11 +309,12 @@ export default function App() {
         <section id="findings" className="content-section">
           <Reveal><div className="section-heading"><div><div className="section-kicker">02 <span>/</span> A CLOSER LOOK</div><h2>Small signals. Better decisions<span>.</span></h2><p>Understand what’s happening, with the actual records behind every finding.</p></div>{auditResult&&<span className="pill"><Activity size={13}/>{total} findings</span>}</div></Reveal>
           {!auditResult?<Reveal><div className="empty-report"><div className="empty-illustration"><div/><div/><div/><span><Activity size={23}/></span></div><h3>Every dataset has a story.</h3><p>Run your first health check to see missing values, repeated<br/>records, mixed types, and potential split contamination.</p><button className="text-button" onClick={()=>navigate('workspace')}>Start with a dataset <ArrowRight size={15}/></button></div></Reveal>:<>
-            <div className="report-toolbar"><div className="segmented">{[['all','All findings'],['danger','Split risks'],['warning','Attention'],['info','Observations']].map(([value,label])=><button key={value} className={filter===value?'selected':''} aria-pressed={filter===value} onClick={()=>setFilter(value)}>{label}</button>)}</div><label className="search-box"><Search size={15}/><input placeholder="Search this page…" aria-label="Search findings on this page" value={search} onChange={e=>setSearch(e.target.value)}/></label></div>
-            <div className="findings-list">{filteredFindings.map((f,i)=><Reveal key={`${auditId}-${f.id}`} delay={Math.min(i*35,150)}><article className={`finding-card ${f.severity}`}><button className="finding-toggle" aria-expanded={openFinding===f.id} onClick={()=>setOpenFinding(openFinding===f.id?'':f.id)}><span className="finding-icon">{f.severity==='danger'?<ShieldCheck size={19}/>:f.severity==='warning'?<TriangleAlert size={19}/>:<Activity size={19}/>}</span><span className="finding-title"><strong>{f.title}</strong><span>{f.datasets.map(k=>names[k]).join(' ↔ ')}</span></span><span className="count-badge">{pretty(f.count)}</span><ChevronDown size={17} className={openFinding===f.id?'rotated':''}/></button>{openFinding===f.id&&<div className="finding-detail"><p>{f.detail}</p>{f.columns.length>0&&<p className="muted">Columns: {f.columns.join(', ')}</p>}<DataTable rows={f.examples}/><small>Up to 12 examples shown. Source row numbers, when present, are 1-based data rows after the header.</small></div>}</article></Reveal>)}</div>
-            {!filteredFindings.length&&<div className="no-findings"><CheckCheck size={24}/><p>{total?'No findings match this page’s filters.':'No findings from the selected checks.'}</p></div>}
-            {total>20&&<div className="pagination"><span>{offset+1}–{Math.min(offset+20,total)} of {total} findings · Filters apply to this page</span><button className="icon-button" disabled={offset===0} onClick={()=>void loadFindings(auditId,Math.max(0,offset-20)).catch(e=>setError(e.message))} aria-label="Previous findings page"><ChevronLeft size={17}/></button><button className="icon-button" disabled={offset+20>=total} onClick={()=>void loadFindings(auditId,offset+20).catch(e=>setError(e.message))} aria-label="Next findings page"><ChevronRight size={17}/></button></div>}
-            <div className="info-note"><CircleHelp size={16}/><p>{auditResult.notice} {riskCount>0&&'Review split findings before training.'}</p></div>
+            <div className="report-toolbar"><div className="segmented">{[['all','All findings'],['danger','Split risks'],['warning','Attention'],['info','Observations']].map(([value,label])=><button key={value} className={filter===value?'selected':''} aria-pressed={filter===value} onClick={()=>{setFilter(value);setOffset(0);setOpenFinding('');}}>{label}</button>)}</div><label className="search-box"><Search size={15}/><input placeholder="Search all findings…" aria-label="Search all findings" maxLength={200} value={search} onChange={e=>{setSearch(e.target.value);setOffset(0);setOpenFinding('');}}/></label></div>
+            <div className="findings-list" aria-busy={findingPage.loading}>{filteredFindings.map((f,i)=><Reveal key={`${auditId}-${f.id}`} delay={Math.min(i*35,150)}><article className={`finding-card ${f.severity}`}><button className="finding-toggle" aria-expanded={openFinding===f.id} onClick={()=>setOpenFinding(openFinding===f.id?'':f.id)}><span className="finding-icon">{f.severity==='danger'?<ShieldCheck size={19}/>:f.severity==='warning'?<TriangleAlert size={19}/>:<Activity size={19}/>}</span><span className="finding-title"><strong>{f.title}</strong><span>{f.datasets.map(k=>names[k]).join(' ↔ ')}</span></span><span className="count-badge">{pretty(f.count)}</span><ChevronDown size={17} className={openFinding===f.id?'rotated':''}/></button>{openFinding===f.id&&<div className="finding-detail"><p>{f.detail}</p>{f.columns.length>0&&<p className="muted">Columns: {f.columns.join(', ')}</p>}<DataTable rows={f.examples}/><small>Up to 12 examples shown. Source row numbers, when present, are 1-based data rows after the header.</small></div>}</article></Reveal>)}</div>
+            {findingPage.error&&<div role="alert" className="findings-status"><p>{findingPage.error}</p><button className="text-button" onClick={findingPage.retry}>Retry findings</button></div>}
+            {!findingPage.loading&&!findingPage.error&&!filteredFindings.length&&<div className="no-findings"><CheckCheck size={24}/><p>{total?'No findings match these filters.':'No findings from the selected checks.'}</p></div>}
+            <div className="pagination"><span role="status">{findingPage.loading ? 'Loading findings…' : findingPage.error ? 'Findings unavailable' : `${findingPage.total ? `${offset+1}–${Math.min(offset+20,findingPage.total)} of ${findingPage.total}` : '0'} matching findings`} · {total} total · Filters cover the full audit</span><button className="icon-button" disabled={findingPage.loading||!!findingPage.error||offset===0} onClick={()=>{setOffset(Math.max(0,offset-20));setOpenFinding('');}} aria-label="Previous findings page"><ChevronLeft size={17}/></button><button className="icon-button" disabled={findingPage.loading||!!findingPage.error||offset+20>=findingPage.total} onClick={()=>{setOffset(offset+20);setOpenFinding('');}} aria-label="Next findings page"><ChevronRight size={17}/></button></div>
+            <div className="info-note"><CircleHelp size={16}/><p>{auditResult.notice}</p></div>
             <Reveal><div className="profile-panel"><div className="panel-title"><span><Columns3 size={18}/> The shape of your data</span><select aria-label="Dataset to inspect" value={activeDataset} onChange={e=>setActiveDataset(e.target.value)}>{datasets.map(d=><option key={d.id} value={d.id}>{d.name}</option>)}</select></div>{profile&&<ColumnProfiles key={`${auditId}-${activeDataset}`} columns={profile.columns} rows={profile.rows}/>}<details className="sample-details"><summary>Preview source records <ChevronDown size={15}/></summary><DataTable rows={profile?.sample||[]}/></details></div></Reveal>
             {!!auditResult.comparisons?.length&&<Reveal><SplitComparisons pairs={auditResult.comparisons} profiles={auditResult.profiles} names={names}/></Reveal>}
           </>}

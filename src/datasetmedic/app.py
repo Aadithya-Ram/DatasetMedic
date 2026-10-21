@@ -11,9 +11,9 @@ import threading
 import time
 from contextlib import asynccontextmanager
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Literal
 
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, Query, Request, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.trustedhost import TrustedHostMiddleware
@@ -255,8 +255,15 @@ def create_app(storage: str | None = None) -> FastAPI:
         return data
 
     @app.get("/api/sessions/{sid}/jobs/{jid}/findings")
-    def findings(sid: str, jid: str, offset: int = 0, limit: int = 20):
+    def findings(sid: str, jid: str, offset: int = 0, limit: int = 20,
+                 query: Annotated[str, Query(max_length=200)] = "",
+                 severity: Literal["all", "danger", "warning", "info"] = "all"):
         data = read_result(sid, jid).get("findings", [])
+        needle = query.strip().casefold()
+        data = [finding for finding in data
+                if (severity == "all" or finding["severity"] == severity)
+                and (not needle or needle in " ".join([finding["title"], finding["detail"],
+                                                       *finding.get("columns", [])]).casefold())]
         offset, limit = max(0, offset), min(100, max(1, limit))
         return {"total": len(data), "items": data[offset:offset + limit]}
 
