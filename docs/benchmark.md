@@ -52,3 +52,29 @@ Memory is the OS high-water mark for the child through audit completion, includi
 The compressed file size and retained frame size both substantially understate process memory in this fixture. The application's row/file limits are guardrails; they do not promise a dataset fits available RAM. Wider schemas, longer strings, different cardinalities and multiple running programs can change memory and timing materially. This is a synthetic two-split baseline, not a measurement of every workflow. Future work should profile representative wider tables and identify allocation hotspots before changing engine behavior.
 
 Adjust contamination independently with `--record-overlap 0..100` and `--group-overlap 0..100`; percentages are rounded down to whole rows. `--repeat` accepts 1–10 fresh processes. Files stay in temporary directories and are removed on normal completion. The script needs no extra dependency beyond the project's Polars installation. CI exercises small fixtures with zero, partial and complete overlap on Windows and Linux; it imposes no hardware-dependent performance threshold.
+
+## Wider schemas — October 21, 2026
+
+The source benchmark now accepts `--columns 5..500` (default 5). Columns beyond the original five are deterministic nullable Int64 values derived from the feature ID. They increase profiling, within-split row comparison and evidence width. Exact split matching deliberately keeps the same three selected features at every width; this does **not** measure hashing hundreds of selected features. Known exact/group overlap and every loaded/profiled column count are verified in each trial. The default five-column fixture is preserved.
+
+```console
+python scripts/benchmark_splits.py --rows 100000 --columns 5 --repeat 3
+python scripts/benchmark_splits.py --rows 100000 --columns 50 --repeat 3
+python scripts/benchmark_splits.py --rows 100000 --columns 100 --repeat 3
+python scripts/benchmark_splits.py --rows 10000 --columns 500 --repeat 3
+```
+
+These four measurements were run sequentially on the same Windows 11/Python 3.14.4/Polars 1.44.2 environment described above, using the DatasetMedic 0.5.0 engine and the updated source benchmark. Each cell below is a median of three fresh-process trials except peak memory, which is the largest observed child high-water mark.
+
+| Rows per split | Columns per split | Full audit | Profile calls inside audit | Other audit work | Peak child working set |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 100,000 | 5 | 0.0971 s | 0.0178 s | 0.0773 s | 198.66 MiB |
+| 100,000 | 50 | 0.8235 s | 0.3114 s | 0.5109 s | 409.47 MiB |
+| 100,000 | 100 | 2.1912 s | 0.7155 s | 1.4757 s | 547.69 MiB |
+| 10,000 | 500 | 37.0989 s | 2.2909 s | 34.8079 s | 801.67 MiB |
+
+Raw JSON: [100k × 5](benchmarks/width-100k-5-windows.json), [100k × 50](benchmarks/width-100k-50-windows.json), [100k × 100](benchmarks/width-100k-100-windows.json), [10k × 500](benchmarks/width-10k-500-windows.json). Full audit ranges were 0.0911–0.1025 s, 0.8071–0.8386 s, 2.1207–2.3594 s and 29.7187–39.9660 s respectively. All runs verified the expected overlaps: 10,000 exact records/20,000 subjects for 100k-row splits, and 1,000/2,000 for 10k-row splits.
+
+Profile durations come from a benchmark-only timer around the engine's two existing profile calls inside a **single** audit; no extra profiling pass warms the data. The original function is restored afterwards. Other audit time is the residual, including checks, evidence construction, split comparisons and timer overhead; it is not a measurement of any one of those tasks. Per-trial phase durations sum to the full audit duration, but separately computed medians need not sum. The production engine is unchanged.
+
+The 500-column fixture has many nullable columns and wide example records. It took much longer despite fewer rows, and its retained frame estimate was only 77.36 MiB while child peak working set reached 801.67 MiB. These figures justify further investigation of work outside profiling; they do not identify its cause. In particular, this benchmark does not measure per-operation allocations, server result serialization, browser rendering, cancellation latency or HTML export. The lifetime peak still includes fixture generation and loading. All earlier timing/cache/memory limitations apply. Do not extrapolate the 100-column result to 500 columns or treat the row/column caps as capacity guarantees. A useful next experiment is to measure evidence construction and the remaining checks separately before changing their behavior.

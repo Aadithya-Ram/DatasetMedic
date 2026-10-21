@@ -1,0 +1,96 @@
+{
+  "rows_per_split": 100000,
+  "splits": 2,
+  "columns": 5,
+  "repeat": 3,
+  "record_overlap_percent": 10,
+  "group_overlap_percent": 20,
+  "median_load_seconds": 0.013137600006302819,
+  "median_audit_seconds": 0.09706099997856654,
+  "median_profile_seconds": 0.01784460002090782,
+  "median_other_audit_seconds": 0.0773433999856934,
+  "max_peak_process_bytes": 208310272,
+  "python": "3.14.4",
+  "polars": "1.44.2",
+  "datasetmedic": "0.5.0",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+  "logical_cpus": 24,
+  "polars_threads": 24,
+  "timing_scope": "Parquet loading and engine audit only; excludes startup, generation, UI and export",
+  "memory_scope": "Child lifetime peak, including imports, generation, writing, loading and audit; excludes parent, server and browser",
+  "cache_scope": "Fresh processes; filesystem cache is not flushed",
+  "feature_scope": "Exact matching uses feature_id, value and category at every width; all columns are profiled",
+  "phase_scope": "Profile calls timed inside the single complete audit; other time is the residual, not a specific check",
+  "trials": [
+    {
+      "load_seconds": 0.012492199981352314,
+      "audit_seconds": 0.10248590001720004,
+      "profile_seconds": 0.01784460002090782,
+      "other_audit_seconds": 0.08464129999629222,
+      "observed_columns": {
+        "train": 5,
+        "test": 5
+      },
+      "peak_process_bytes": 184655872,
+      "peak_memory_method": "Windows PeakWorkingSetSize",
+      "loaded_frame_bytes": 6825000,
+      "parquet_bytes": 573262,
+      "expected_counts": {
+        "split_overlap": 10000,
+        "group_overlap": 20000
+      },
+      "observed_counts": {
+        "split_overlap": 10000,
+        "group_overlap": 20000
+      },
+      "verified": true
+    },
+    {
+      "load_seconds": 0.013529799995012581,
+      "audit_seconds": 0.09105610000551678,
+      "profile_seconds": 0.016218699980527163,
+      "other_audit_seconds": 0.07483740002498962,
+      "observed_columns": {
+        "train": 5,
+        "test": 5
+      },
+      "peak_process_bytes": 208310272,
+      "peak_memory_method": "Windows PeakWorkingSetSize",
+      "loaded_frame_bytes": 6825000,
+      "parquet_bytes": 573262,
+      "expected_counts": {
+        "split_overlap": 10000,
+        "group_overlap": 20000
+      },
+      "observed_counts": {
+        "split_overlap": 10000,
+        "group_overlap": 20000
+      },
+      "verified": true
+    },
+    {
+      "load_seconds": 0.013137600006302819,
+      "audit_seconds": 0.09706099997856654,
+      "profile_seconds": 0.019717599992873147,
+      "other_audit_seconds": 0.0773433999856934,
+      "observed_columns": {
+        "train": 5,
+        "test": 5
+      },
+      "peak_process_bytes": 204521472,
+      "peak_memory_method": "Windows PeakWorkingSetSize",
+      "loaded_frame_bytes": 6825000,
+      "parquet_bytes": 573262,
+      "expected_counts": {
+        "split_overlap": 10000,
+        "group_overlap": 20000
+      },
+      "observed_counts": {
+        "split_overlap": 10000,
+        "group_overlap": 20000
+      },
+      "verified": true
+    }
+  ]
+}

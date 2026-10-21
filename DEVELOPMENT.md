@@ -53,6 +53,8 @@ Browser tests wait for the enabled file chooser after navigation, because `setIn
 
 For split and memory measurements, run `python scripts/benchmark_splits.py --rows 100000 --repeat 3`. Rows are per split. Each repetition runs in a fresh child, verifies known exact/group overlap, and reports timing, process peak memory, frame/file sizes and environment details as JSON. See [benchmark notes](docs/benchmark.md) for scope and recorded raw trials. Keep this separate from the historical single-frame benchmark. CI checks correctness on small fixtures without timing or memory ceilings.
 
+Use `--columns 5..500` to vary schema width; five preserves the original fixture. Extra nullable integer columns are profiled and included in row evidence, while selected exact-match features stay fixed. Benchmark-only timers measure the two existing profile calls inside the audit and report the residual separately. Every loaded/profiled width and known overlap count is checked. Run measurements sequentially without concurrent builds/tests and inspect raw trials; independent phase medians need not sum. Wide examples can be expensive even for relatively few rows.
+
 ## Work schedule and locking
 
 The chat heartbeat runs at 10:00, 16:00 and 21:00 Asia/Kolkata through October 30, 2026. The computer must be awake, online, and the desktop app running. Sessions may make several meaningful commits; no empty commits, backdating, or artificial splitting. Do not defer completed work to create activity later.
