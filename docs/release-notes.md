@@ -1,17 +1,16 @@
-# DatasetMedic 0.4.0
+# DatasetMedic 0.5.0
 
-A local browser workbench for inspecting tabular datasets before training, with clearer split comparisons and easier recovery from recipe mistakes.
+A local browser workbench for inspecting tabular datasets before training, with accessible offline reports and easier navigation through wide schemas and large audits.
 
 ## New in this release
 
-- Show each split's row count and missing percentages with count/denominator evidence. Name dataset headers and label mean/median, most frequent values and type differences explicitly.
-- Preserve tiny positive missing rates and very small summary statistics instead of displaying them as zero. Comparisons remain descriptive, with display rounding disclosed.
-- Identify invalid recipe steps by number and operation, and offer an edit shortcut for the failed recipe snapshot. Changed recipes never reuse an outdated shortcut.
-- Recheck terminal files after worker exit so completed results and specific errors survive a status-polling race. Failed jobs remain unavailable for download.
-- Share typed job-status metadata between the API and interface. Python recipe callers receive a ValueError-compatible RecipeError with step context.
-- Wait for session readiness in browser tests and preserve synthetic failure diagnostics in CI.
+- Search titles, explanations and column names across the entire audit before pagination. Combine severity filters with search, with matching and overall counts kept separate.
+- Cancel obsolete finding requests, hide stale cards while loading, and offer retry controls for page errors.
+- Search column profiles, show only columns with missing values, and browse 24 cards per page. Reset filters on dataset changes or completed audits.
+- Export script-free, offline HTML reports with section navigation, keyboard support, semantic profile/evidence tables, responsive scrolling and print styles. Wide evidence uses field/value tables.
+- Clearly label cleaned report snapshots and preserve distinguishable missing, boolean and quoted text evidence. Names and values remain escaped.
 
-Searchable columns, import feedback, editable recipes, keyboard navigation and reproducible exports remain included. Earlier releases are preserved.
+Recipe recovery, split comparisons, training-only imputation, import feedback, accessible controls and reproducible exports remain included. Prior releases are preserved.
 
 ## Download and run
 

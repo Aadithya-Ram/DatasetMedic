@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0 — October 21, 2026
 
 - Search and filter findings across the full audit before pagination, with matching/total counts, stale-response protection and retryable request errors.
 - Search column profiles by name, filter for missing values and browse 24 cards per page. Reset filters automatically when switching datasets or rerunning an audit.

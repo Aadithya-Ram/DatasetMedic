@@ -45,6 +45,8 @@ In a second terminal, run `npm run test:e2e` in `web`. On Linux, set `DATASETMED
 
 Build the interface first, then `python -m build` and `python scripts/check_wheel.py`. Install the wheel in a clean environment and check both `/` and `/api/health`. Run `python scripts/benchmark.py --rows 100000` for a synthetic benchmark. Capture accurate demo screenshots with `node web/scripts/capture.mjs` while the app runs on port 8765. Screenshots use synthetic fixtures only.
 
+If unrelated untracked files are present, build release archives from a temporary copy of the files listed by `git ls-files` plus `src/datasetmedic/static` from the checked production build. Copy current tracked contents so pending release metadata is included, retain their relative paths, and run the build in that isolated directory. Inspect both archives for unrelated content before publication. Preserve the original workspace files. Screenshot capture waits for the highlighted navigation to match each section before recording it.
+
 GitHub Actions checks Windows/Linux and Python 3.11/3.14, builds the wheel and performs a package smoke check. Linux/Python 3.11 additionally runs the browser suite.
 
 Browser tests wait for the enabled file chooser after navigation, because `setInputFiles` can dispatch to a disabled input before session startup finishes. A gated-session regression covers that boundary without fixed sleeps or retries. Failed CI browser runs preserve Playwright traces, screenshots and error context for seven days via [GitHub's artifact action](https://github.com/actions/upload-artifact). These tests use synthetic fixtures only; do not add private datasets to CI. Locally, inspect `web/test-results/` after a failure.

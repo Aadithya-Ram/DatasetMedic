@@ -26,12 +26,14 @@ try {
   await page.getByRole('button',{name:/Shared subjects: subject_id/}).click();
   await page.locator('#findings').scrollIntoViewIfNeeded();
   await page.evaluate(()=>document.getElementById('findings').scrollIntoView({block:'start'}));
+  await expect(page.getByRole('button',{name:/^Health report/})).toHaveAttribute('aria-current','location');
   await page.screenshot({path:directory+'health-report.png'});
   await page.getByRole('button',{name:'Add recipe step'}).click();
   await page.getByRole('button',{name:'Preview changes'}).click();
   await page.getByText('Up to date',{exact:true}).waitFor({state:'visible'});
   await page.getByRole('button',{name:'Dismiss notification'}).click();
   await page.evaluate(()=>document.getElementById('cleaning').scrollIntoView({block:'start'}));
+  await expect(page.getByRole('button',{name:'Cleaning studio',exact:true})).toHaveAttribute('aria-current','location');
   await page.screenshot({path:directory+'cleaning-studio.png'});
   await page.getByLabel('What would you like to do?').selectOption('trim');
   await page.getByRole('group',{name:'Choose columns',exact:true}).getByRole('button',{name:'age',exact:true}).click();
@@ -40,6 +42,7 @@ try {
   await expect(page.getByRole('alert')).toContainText('Step 2 (trim)');
   await expect(page.getByRole('button',{name:'Edit step 2',exact:true})).toBeEnabled();
   await page.evaluate(()=>document.getElementById('cleaning').scrollIntoView({block:'start'}));
+  await expect(page.getByRole('button',{name:'Cleaning studio',exact:true})).toHaveAttribute('aria-current','location');
   await page.screenshot({path:directory+'recipe-recovery.png'});
   await page.goto('http://127.0.0.1:8765/');
   await expect(page.getByRole('button',{name:'Choose files',exact:true})).toBeEnabled();

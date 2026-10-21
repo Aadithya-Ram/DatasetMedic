@@ -26,7 +26,7 @@ Open CSV or Parquet files, inspect the evidence, preview deliberate cleaning, an
 Requires **Python 3.11 or newer**. The downloadable wheel includes the built interface; Node is only needed for development.
 
 ```shell
-python -m pip install https://github.com/Aadithya-Ram/DatasetMedic/releases/download/v0.4.0/datasetmedic-0.4.0-py3-none-any.whl
+python -m pip install https://github.com/Aadithya-Ram/DatasetMedic/releases/download/v0.5.0/datasetmedic-0.5.0-py3-none-any.whl
 datasetmedic
 ```
 
@@ -82,7 +82,7 @@ Screenshots show the real app with synthetic data. The import request was delibe
 
 The recovery screenshot deliberately applies text trimming to a numeric column in the synthetic demo. Choose **Edit step** to correct the operation, save and preview again. Source files stay unchanged.
 
-**On `main` (next release):** the standalone HTML report now includes keyboard navigation, column profiles, readable evidence tables and print styles. Wide examples show each field vertically. It works offline without scripts or external assets. These changes currently require the source installation; v0.4.0 remains preserved.
+**New in v0.5.0:** the standalone HTML report now includes keyboard navigation, column profiles, readable evidence tables and print styles. Wide examples show each field vertically. It works offline without scripts or external assets. The downloadable wheel includes these improvements; earlier release assets remain available.
 
 The workbench also supports searching all column profiles by name, showing only columns with missing values, and browsing 24 cards per page. Counts show both matches and the full schema. These display filters leave data and cleaning selections unchanged; switching datasets or completing a new audit resets them.
 
