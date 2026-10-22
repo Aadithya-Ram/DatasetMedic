@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Gather only the first 12 matching rows when building finding evidence, avoiding a full-width copy of all matching rows. Preserve source row numbers, order, values and originals.
+
 ## 0.5.0 — October 21, 2026
 
 - Search and filter findings across the full audit before pagination, with matching/total counts, stale-response protection and retryable request errors.

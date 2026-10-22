@@ -84,13 +84,14 @@ def missing_expr(name: str, dtype: pl.DataType) -> pl.Expr:
 
 
 def evidence(df: pl.DataFrame, mask: pl.Expr) -> list[dict]:
-    key = "__datasetmedic_row__"
-    while key in df.columns:
-        key += "_"
     label = "source_row"
     while label in df.columns:
         label += "_"
-    return safe(df.with_row_index(key, offset=1).filter(mask).head(12).rename({key: label}).to_dicts())
+    # Filter row positions first, so matching rows beyond the sample never copy wide column buffers.
+    indices = df.select(pl.int_range(pl.len(), dtype=pl.UInt32).filter(mask).head(12)).to_series()
+    sample = df[indices]
+    sample.insert_column(0, pl.Series(label, indices + 1))
+    return safe(sample.to_dicts())
 
 
 def profile(df: pl.DataFrame) -> dict:

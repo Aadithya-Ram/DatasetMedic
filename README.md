@@ -177,6 +177,8 @@ The source benchmark now covers two one-million-row splits with known exact/grou
 
 New [wide-schema measurements](docs/benchmark.md#wider-schemas--october-21-2026) cover 5–500 columns and separate profile time from the rest of the audit. The synthetic 500-column case was substantially slower despite fewer rows; the notes include raw trials, scope and memory limits. These are measurements, not performance guarantees.
 
+On `main`, [row-position evidence sampling](docs/benchmark.md#evidence-sampling-improvement--october-22-2026) reduced median audit time from 32.91 to 17.88 seconds in a controlled 500-column fixture while preserving the example records. Results vary by data shape; this improvement is not yet included in the v0.5.0 download.
+
 ## Contributing
 
 Bug reports with a **small synthetic example** are especially useful. Please avoid posting private datasets or unredacted reports. For changes, include the expected behavior and relevant tests. See [CONTRIBUTING.md](CONTRIBUTING.md).

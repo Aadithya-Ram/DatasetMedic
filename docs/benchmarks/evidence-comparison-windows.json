@@ -1,0 +1,210 @@
+{
+  "rows_per_split": 10000,
+  "columns": 500,
+  "repeat": 3,
+  "order": "Alternating legacy then optimized, fresh children, sequentially",
+  "legacy_source": "evidence from v0.5.0 commit 8bd6d1f; rest of engine identical",
+  "optimized_source_sha256": "418a8806be84bf2aad00bdd27a183edd787ec4598171d838d6733d3a9110fb1f",
+  "worker_code": "\nimport ast,importlib.util,json,subprocess,time,argparse,platform,sys\nfrom datasetmedic import engine\nspec=importlib.util.spec_from_file_location('bench','scripts/benchmark_splits.py');bench=importlib.util.module_from_spec(spec);spec.loader.exec_module(bench)\nvariant=sys.argv[1]\nif variant=='legacy':\n source=subprocess.run(['git','show','8bd6d1f:src/datasetmedic/engine.py'],check=True,capture_output=True,text=True,encoding='utf-8').stdout\n node=next(node for node in ast.parse(source).body if isinstance(node,ast.FunctionDef) and node.name=='evidence')\n scope={'pl':bench.pl,'safe':engine.safe};exec(ast.get_source_segment(source,node),scope);engine.evidence=scope['evidence']\noriginal=engine.evidence;elapsed=[]\ndef measured(frame,mask):\n start=time.perf_counter();result=original(frame,mask);elapsed.append(time.perf_counter()-start);return result\nengine.evidence=measured\nresult=bench.trial(argparse.Namespace(rows=10000,columns=500,record_overlap=10,group_overlap=20))\nresult.update(variant=variant,evidence_seconds=sum(elapsed),evidence_calls=len(elapsed),python=platform.python_version(),polars=bench.pl.__version__,platform=platform.platform(),polars_threads=bench.pl.thread_pool_size())\nprint(json.dumps(result))\n",
+  "scope": "Audit includes profiling and evidence timing. Peak is child lifetime including generation; excludes server, browser and export. Filesystem cache not flushed.",
+  "summary": {
+    "legacy": {
+      "median_audit_seconds": 32.907723299984355,
+      "median_evidence_seconds": 22.65165420010453,
+      "max_peak_process_bytes": 875913216
+    },
+    "optimized": {
+      "median_audit_seconds": 17.882906699960586,
+      "median_evidence_seconds": 7.63656039966736,
+      "max_peak_process_bytes": 863375360
+    }
+  },
+  "trials": [
+    {
+      "load_seconds": 0.2266424000263214,
+      "audit_seconds": 32.907723299984355,
+      "profile_seconds": 1.915291299985256,
+      "other_audit_seconds": 30.9924319999991,
+      "observed_columns": {
+        "train": 500,
+        "test": 500
+      },
+      "peak_process_bytes": 869986304,
+      "peak_memory_method": "Windows PeakWorkingSetSize",
+      "loaded_frame_bytes": 81120000,
+      "parquet_bytes": 17344152,
+      "expected_counts": {
+        "split_overlap": 1000,
+        "group_overlap": 2000
+      },
+      "observed_counts": {
+        "split_overlap": 1000,
+        "group_overlap": 2000
+      },
+      "verified": true,
+      "variant": "legacy",
+      "evidence_seconds": 22.65165420010453,
+      "evidence_calls": 992,
+      "python": "3.14.4",
+      "polars": "1.44.2",
+      "platform": "Windows-11-10.0.26300-SP0",
+      "polars_threads": 24,
+      "pair": 1
+    },
+    {
+      "load_seconds": 0.143697899999097,
+      "audit_seconds": 17.882906699960586,
+      "profile_seconds": 2.2567139999591745,
+      "other_audit_seconds": 15.626192700001411,
+      "observed_columns": {
+        "train": 500,
+        "test": 500
+      },
+      "peak_process_bytes": 862879744,
+      "peak_memory_method": "Windows PeakWorkingSetSize",
+      "loaded_frame_bytes": 81120000,
+      "parquet_bytes": 17344152,
+      "expected_counts": {
+        "split_overlap": 1000,
+        "group_overlap": 2000
+      },
+      "observed_counts": {
+        "split_overlap": 1000,
+        "group_overlap": 2000
+      },
+      "verified": true,
+      "variant": "optimized",
+      "evidence_seconds": 7.63656039966736,
+      "evidence_calls": 992,
+      "python": "3.14.4",
+      "polars": "1.44.2",
+      "platform": "Windows-11-10.0.26300-SP0",
+      "polars_threads": 24,
+      "pair": 1
+    },
+    {
+      "load_seconds": 0.1321441000327468,
+      "audit_seconds": 33.03284589998657,
+      "profile_seconds": 2.253770400013309,
+      "other_audit_seconds": 30.77907549997326,
+      "observed_columns": {
+        "train": 500,
+        "test": 500
+      },
+      "peak_process_bytes": 875913216,
+      "peak_memory_method": "Windows PeakWorkingSetSize",
+      "loaded_frame_bytes": 81120000,
+      "parquet_bytes": 17344152,
+      "expected_counts": {
+        "split_overlap": 1000,
+        "group_overlap": 2000
+      },
+      "observed_counts": {
+        "split_overlap": 1000,
+        "group_overlap": 2000
+      },
+      "verified": true,
+      "variant": "legacy",
+      "evidence_seconds": 22.657620300888084,
+      "evidence_calls": 992,
+      "python": "3.14.4",
+      "polars": "1.44.2",
+      "platform": "Windows-11-10.0.26300-SP0",
+      "polars_threads": 24,
+      "pair": 2
+    },
+    {
+      "load_seconds": 0.12782029999652877,
+      "audit_seconds": 19.134455399995204,
+      "profile_seconds": 2.3379430000204593,
+      "other_audit_seconds": 16.796512399974745,
+      "observed_columns": {
+        "train": 500,
+        "test": 500
+      },
+      "peak_process_bytes": 821026816,
+      "peak_memory_method": "Windows PeakWorkingSetSize",
+      "loaded_frame_bytes": 81120000,
+      "parquet_bytes": 17344152,
+      "expected_counts": {
+        "split_overlap": 1000,
+        "group_overlap": 2000
+      },
+      "observed_counts": {
+        "split_overlap": 1000,
+        "group_overlap": 2000
+      },
+      "verified": true,
+      "variant": "optimized",
+      "evidence_seconds": 7.919219299219549,
+      "evidence_calls": 992,
+      "python": "3.14.4",
+      "polars": "1.44.2",
+      "platform": "Windows-11-10.0.26300-SP0",
+      "polars_threads": 24,
+      "pair": 2
+    },
+    {
+      "load_seconds": 0.1298475000075996,
+      "audit_seconds": 30.537868799990974,
+      "profile_seconds": 1.833275000040885,
+      "other_audit_seconds": 28.70459379995009,
+      "observed_columns": {
+        "train": 500,
+        "test": 500
+      },
+      "peak_process_bytes": 847101952,
+      "peak_memory_method": "Windows PeakWorkingSetSize",
+      "loaded_frame_bytes": 81120000,
+      "parquet_bytes": 17344152,
+      "expected_counts": {
+        "split_overlap": 1000,
+        "group_overlap": 2000
+      },
+      "observed_counts": {
+        "split_overlap": 1000,
+        "group_overlap": 2000
+      },
+      "verified": true,
+      "variant": "legacy",
+      "evidence_seconds": 20.80151349946391,
+      "evidence_calls": 992,
+      "python": "3.14.4",
+      "polars": "1.44.2",
+      "platform": "Windows-11-10.0.26300-SP0",
+      "polars_threads": 24,
+      "pair": 3
+    },
+    {
+      "load_seconds": 0.14821509999455884,
+      "audit_seconds": 16.89648469997337,
+      "profile_seconds": 1.9492378000286408,
+      "other_audit_seconds": 14.94724689994473,
+      "observed_columns": {
+        "train": 500,
+        "test": 500
+      },
+      "peak_process_bytes": 863375360,
+      "peak_memory_method": "Windows PeakWorkingSetSize",
+      "loaded_frame_bytes": 81120000,
+      "parquet_bytes": 17344152,
+      "expected_counts": {
+        "split_overlap": 1000,
+        "group_overlap": 2000
+      },
+      "observed_counts": {
+        "split_overlap": 1000,
+        "group_overlap": 2000
+      },
+      "verified": true,
+      "variant": "optimized",
+      "evidence_seconds": 7.052762701408938,
+      "evidence_calls": 992,
+      "python": "3.14.4",
+      "polars": "1.44.2",
+      "platform": "Windows-11-10.0.26300-SP0",
+      "polars_threads": 24,
+      "pair": 3
+    }
+  ]
+}

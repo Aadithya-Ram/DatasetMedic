@@ -78,3 +78,19 @@ Raw JSON: [100k × 5](benchmarks/width-100k-5-windows.json), [100k × 50](benchm
 Profile durations come from a benchmark-only timer around the engine's two existing profile calls inside a **single** audit; no extra profiling pass warms the data. The original function is restored afterwards. Other audit time is the residual, including checks, evidence construction, split comparisons and timer overhead; it is not a measurement of any one of those tasks. Per-trial phase durations sum to the full audit duration, but separately computed medians need not sum. The production engine is unchanged.
 
 The 500-column fixture has many nullable columns and wide example records. It took much longer despite fewer rows, and its retained frame estimate was only 77.36 MiB while child peak working set reached 801.67 MiB. These figures justify further investigation of work outside profiling; they do not identify its cause. In particular, this benchmark does not measure per-operation allocations, server result serialization, browser rendering, cancellation latency or HTML export. The lifetime peak still includes fixture generation and loading. All earlier timing/cache/memory limitations apply. Do not extrapolate the 100-column result to 500 columns or treat the row/column caps as capacity guarantees. A useful next experiment is to measure evidence construction and the remaining checks separately before changing their behavior.
+
+## Evidence sampling improvement — October 22, 2026
+
+Instrumenting the existing evidence function confirmed a substantial cost in the same 10,000-row-per-split, 500-column fixture. The previous implementation filtered a full-width dataframe before taking its first 12 rows. The source implementation now filters row positions first, limits them to 12 and gathers only those rows. Counts, example ordering, 1-based source row numbers, collision-safe labels and JSON values are preserved. Other audit logic is unchanged.
+
+Three alternating pairs of fresh children compared the exact evidence function from release commit `8bd6d1f` with the new function, using the same current engine and benchmark for both. Each child timed all 992 evidence calls inside its one complete audit. Measurements ran sequentially before tests/builds.
+
+| Measurement | Released evidence function | Row-position sampling |
+| --- | ---: | ---: |
+| Median full audit | 32.9077 s | 17.8829 s |
+| Median evidence calls within audit | 22.6517 s | 7.6366 s |
+| Maximum child peak working set | 835.34 MiB | 823.38 MiB |
+
+Median audit duration decreased about **46% in this synthetic fixture**. This is not a universal speedup or a material memory-reduction claim: wide retained examples still consume substantial memory, and the peak difference is small. Both variants verified the same expected exact/group overlap counts; regression tests compare complete evidence records with the original algorithm for scalar/nullable masks, empty/short/truncated samples, Unicode, large integers, reserved-name collisions and unchanged source frames. All previous scope/cache/memory limitations still apply.
+
+[Raw paired results and executable worker code](benchmarks/evidence-comparison-windows.json) record the measured working-file hash, control revision, per-trial timings, runtime and order. To reproduce a child from a source checkout containing both revisions, load `worker_code` from that JSON and run `[sys.executable, '-c', worker_code, 'legacy']` or the `optimized` variant. The legacy worker extracts only the original evidence function from the recorded commit; the optimized worker uses the checked-out function. Run multiple pairs sequentially and compare distributions. These source changes are not yet in the preserved v0.5.0 download.

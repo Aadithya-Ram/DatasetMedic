@@ -3,7 +3,33 @@ import json
 import polars as pl
 import pytest
 
-from datasetmedic.engine import RecipeError, audit, execute_recipe, load_frame, render_report, safe, transform
+from datasetmedic.engine import (
+    RecipeError,
+    audit,
+    evidence,
+    execute_recipe,
+    load_frame,
+    render_report,
+    safe,
+    transform,
+)
+
+
+@pytest.mark.parametrize("mode", ["some", "all", "none", "nullable"])
+@pytest.mark.parametrize("rows", [0, 7, 40])
+def test_evidence_index_sampling_preserves_exact_records_order_and_originals(mode, rows):
+    frame = pl.DataFrame({"value": list(range(rows)), "source_row": ["original"] * rows,
+                          "source_row_": list(range(rows)), "__datasetmedic_row__": [False] * rows,
+                          "text": ["東京" if index % 2 else None for index in range(rows)],
+                          "identifier": [2**53 + index for index in range(rows)]})
+    before = frame.clone()
+    masks = {"some": pl.col("value") % 2 == 0, "all": pl.lit(True), "none": pl.lit(False),
+             "nullable": pl.when(pl.col("value") % 3 == 0).then(None).otherwise(pl.col("value") > 4)}
+    mask = masks[mode]
+    expected = safe(frame.with_row_index("__datasetmedic_row___", offset=1).filter(mask).head(12)
+                    .rename({"__datasetmedic_row___": "source_row__"}).to_dicts())
+    assert evidence(frame, mask) == expected
+    assert frame.equals(before)
 
 
 @pytest.mark.parametrize("step", [
