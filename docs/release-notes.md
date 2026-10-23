@@ -1,16 +1,15 @@
-# DatasetMedic 0.5.0
+# DatasetMedic 0.5.1
 
-A local browser workbench for inspecting tabular datasets before training, with accessible offline reports and easier navigation through wide schemas and large audits.
+A performance patch for finding evidence in wide datasets.
 
 ## New in this release
 
-- Search titles, explanations and column names across the entire audit before pagination. Combine severity filters with search, with matching and overall counts kept separate.
-- Cancel obsolete finding requests, hide stale cards while loading, and offer retry controls for page errors.
-- Search column profiles, show only columns with missing values, and browse 24 cards per page. Reset filters on dataset changes or completed audits.
-- Export script-free, offline HTML reports with section navigation, keyboard support, semantic profile/evidence tables, responsive scrolling and print styles. Wide evidence uses field/value tables.
-- Clearly label cleaned report snapshots and preserve distinguishable missing, boolean and quoted text evidence. Names and values remain escaped.
+- Select the first 12 matching row positions before gathering evidence, avoiding copies of all matching wide rows.
+- Preserve exact example records, ordering, 1-based source row numbers, collision-safe labels and originals.
+- In three controlled pairs on a synthetic 500-column fixture, median audit time decreased from 32.91 to 17.88 seconds. This is fixture-specific; no universal speedup or substantial memory reduction is claimed.
+- Include equivalence tests and raw comparison results with reproducible worker code in the source archive.
 
-Recipe recovery, split comparisons, training-only imputation, import feedback, accessible controls and reproducible exports remain included. Prior releases are preserved.
+The interface, cleaning recipes and exported data semantics remain unchanged. All v0.5.0 features and earlier releases remain available.
 
 ## Download and run
 

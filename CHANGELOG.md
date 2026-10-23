@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.1 — October 23, 2026
 
 - Gather only the first 12 matching rows when building finding evidence, avoiding a full-width copy of all matching rows. Preserve source row numbers, order, values and originals.
 

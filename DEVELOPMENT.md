@@ -59,9 +59,9 @@ Use `--columns 5..500` to vary schema width; five preserves the original fixture
 
 ## Work schedule and locking
 
-The chat heartbeat runs at 10:00, 16:00 and 21:00 Asia/Kolkata through October 30, 2026. The computer must be awake, online, and the desktop app running. Sessions may make several meaningful commits; no empty commits, backdating, or artificial splitting. Do not defer completed work to create activity later.
+As requested on October 21, the chat heartbeat runs once daily at 21:00 Asia/Kolkata on October 22–30, 2026. Make at most one consolidated push per India calendar day and do no extra work between runs. Keep scope, checks and updates focused to save tokens. The computer must be awake, online, and the desktop app running. No empty commits, backdating, artificial splitting or manufactured work.
 
-On October 18 an observed 21:00 UTC trigger arrived at 02:30 India time. The stored recurrence was adjusted to 04:30, 10:30 and 15:30 UTC, corresponding to the intended local slots. Preserve the intended India-time schedule; verify the next actual trigger rather than assuming the recurrence is interpreted in the Windows timezone.
+On October 18 an observed 21:00 UTC trigger arrived at 02:30 India time. The stored recurrence was adjusted to 04:30, 10:30 and 15:30 UTC, corresponding to the intended local slots. That three-slot schedule was superseded by the user: the current recurrence uses only 15:30 UTC for 21:00 India time.
 
 Before edits, start `python scripts/work_session.py` in a retained terminal tool session (TTY enabled). Wait for `LOCK ACQUIRED`; preserve its session ID and keep it alive through edits, checks and pushes. If it returns 75/BUSY, skip the run. Release by sending a newline to that session. This uses an OS-backed advisory lock: a crashed holder releases automatically. Every automated writer must participate in this convention.
 
