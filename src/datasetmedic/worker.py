@@ -7,6 +7,7 @@ from importlib.metadata import version
 from pathlib import Path
 
 from datasetmedic.engine import RecipeError, audit, fingerprint, load_frame, render_report, safe, transform
+from datasetmedic.results import write_result
 
 
 def run_job(root: str, spec: dict):
@@ -89,8 +90,7 @@ print("Reproduced datasets written to", args.output)
                         archive.write(path, path.name)
                 result["download"] = True
         progress("Complete", 100)
-        (folder / "result.tmp").write_text(json.dumps(safe(result), allow_nan=False), encoding="utf-8")
-        (folder / "result.tmp").replace(folder / "result.json")
+        write_result(folder, result)
     except Exception as exc:  # noqa: BLE001 -- process boundary must return actionable errors to the UI.
         # Logs stay local. API exposes the useful message, not a traceback or local paths.
         (folder / "traceback.txt").write_text(traceback.format_exc(), encoding="utf-8")

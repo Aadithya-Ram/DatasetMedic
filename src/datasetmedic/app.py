@@ -20,6 +20,7 @@ from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from datasetmedic import __version__
 from datasetmedic.models import JobRequest, JobStatus
+from datasetmedic.results import read_findings
 from datasetmedic.worker import run_job
 
 MAX_FILE_BYTES = 250 * 1024 * 1024
@@ -258,14 +259,8 @@ def create_app(storage: str | None = None) -> FastAPI:
     def findings(sid: str, jid: str, offset: int = 0, limit: int = 20,
                  query: Annotated[str, Query(max_length=200)] = "",
                  severity: Literal["all", "danger", "warning", "info"] = "all"):
-        data = read_result(sid, jid).get("findings", [])
-        needle = query.strip().casefold()
-        data = [finding for finding in data
-                if (severity == "all" or finding["severity"] == severity)
-                and (not needle or needle in " ".join([finding["title"], finding["detail"],
-                                                       *finding.get("columns", [])]).casefold())]
-        offset, limit = max(0, offset), min(100, max(1, limit))
-        return {"total": len(data), "items": data[offset:offset + limit]}
+        data = read_result(sid, jid)
+        return read_findings(get_job(sid, jid)["folder"], data, offset, limit, query, severity)
 
     @app.get("/api/sessions/{sid}/jobs/{jid}/download")
     def download(sid: str, jid: str):

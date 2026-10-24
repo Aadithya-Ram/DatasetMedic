@@ -79,6 +79,14 @@ def test_demo_audit_preview_export_and_reproduce(client, tmp_path):
     findings = client.get(f"{base}/jobs/{jid}/findings?limit=2").json()
     assert len(findings["items"]) == 2
     assert findings["total"] == result["finding_count"]
+    folder = client.app.state.root / base.rsplit("/", 1)[1] / jid
+    stored = json.loads((folder / "result.json").read_text(encoding="utf-8"))
+    assert "findings" not in stored
+    assert stored["finding_count"] == findings["total"]
+    assert (folder / "findings-index.json").exists()
+    first = findings["items"][0]
+    filtered = client.get(f"{base}/jobs/{jid}/findings", params={"query": first["title"]}).json()
+    assert first in filtered["items"]
     recipe = {"steps": [{"op": "deduplicate"}, {"op": "fill", "columns": ["age"], "method": "median"}]}
     req = {"kind": "preview", "config": config, "recipe": recipe}
     preview_id = client.post(base + "/jobs", json=req).json()["id"]
