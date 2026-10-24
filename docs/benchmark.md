@@ -94,3 +94,16 @@ Three alternating pairs of fresh children compared the exact evidence function f
 Median audit duration decreased about **46% in this synthetic fixture**. This is not a universal speedup or a material memory-reduction claim: wide retained examples still consume substantial memory, and the peak difference is small. Both variants verified the same expected exact/group overlap counts; regression tests compare complete evidence records with the original algorithm for scalar/nullable masks, empty/short/truncated samples, Unicode, large integers, reserved-name collisions and unchanged source frames. All previous scope/cache/memory limitations still apply.
 
 [Raw paired results and executable worker code](benchmarks/evidence-comparison-windows.json) record the measured working-file hash, control revision, per-trial timings, runtime and order. To reproduce a child from a source checkout containing both revisions, load `worker_code` from that JSON and run `[sys.executable, '-c', worker_code, 'legacy']` or the `optimized` variant. The legacy worker extracts only the original evidence function from the recorded commit; the optimized worker uses the checked-out function. Run multiple pairs sequentially and compare distributions. The improvement is included in v0.5.1; the original v0.5.0 release remains preserved.
+
+## Indexed finding-page reads — October 24, 2026
+
+`python scripts/benchmark_findings.py` creates 300 synthetic findings, each containing 12 rows × 100 text columns. It compares reading page one (20 findings) from a legacy inline result versus a small summary plus indexed records. Three alternating pairs use fresh child processes. All six complete response payloads have the same SHA256, as well as verified counts and IDs. The legacy JSON fixture is 29.59 MiB.
+
+| Measurement | Inline result | Indexed records |
+| --- | ---: | ---: |
+| Median summary + page read | 0.2815 s | 0.0181 s |
+| Largest traced Python allocation peak | 79.43 MiB | 3.83 MiB |
+
+[Raw trials](benchmarks/findings-pages-windows.json) record Python 3.14.4 and Windows platform details. These are `tracemalloc` Python-allocation peaks during reading/filtering, **not OS working sets or total app RAM**. Fixture generation/writing, audit construction, worker publication, server response serialization, browser rendering and export are excluded. Filesystem cache is not flushed. Do not compare these peaks directly with the earlier OS-memory tables or assume the same savings for every dataset.
+
+The new temporary format stores the full findings once, plus a small metadata index and result summary. Queries still filter the whole audit before reading the chosen records; metadata remains proportional to finding count. Wide retained evidence, disk usage and engine audit peaks remain relevant. Atomic-completion and byte-offset/Unicode regressions accompany the change. It is available on main for the next release; published v0.5.1 assets are preserved.
