@@ -51,6 +51,22 @@ def test_nan_constant_checks_and_profile_examples_follow_missingness_policy():
     assert columns["one"]["unique"] == frame["one"].n_unique()
 
 
+def test_infinity_evidence_stays_distinguishable_from_missing_values():
+    frame = pl.DataFrame({"label": [float("inf"), float("-inf"), float("nan"), None]})
+    before = frame.clone()
+    result = audit({"data": frame}, {"target": "label"})
+    json.dumps(result, allow_nan=False)
+    column = result["profiles"]["data"]["columns"][0]
+    assert column["missing"] == 2
+    assert column["examples"] == ["Infinity", "-Infinity"]
+    assert column["stats"]["mean"] is None
+    assert [row["label"] for row in result["profiles"]["data"]["sample"]] == ["Infinity", "-Infinity", None, None]
+    balance = next(f for f in result["findings"] if f["kind"] == "class_balance")
+    assert balance["count"] == 2
+    assert {row["label"] for row in balance["examples"]} == {"Infinity", "-Infinity"}
+    assert frame.equals(before)
+
+
 @pytest.mark.parametrize("mode", ["some", "all", "none", "nullable"])
 @pytest.mark.parametrize("rows", [0, 7, 40])
 def test_evidence_index_sampling_preserves_exact_records_order_and_originals(mode, rows):

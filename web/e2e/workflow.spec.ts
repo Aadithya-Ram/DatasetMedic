@@ -2,6 +2,24 @@ import { test, expect } from '@playwright/test';
 import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 
+test('NaN labels stay missing and infinity source evidence is explicit',async({page})=>{
+  await openWorkbench(page);
+  const csv='value,label\ninf,0\n-inf,0\n1,1\n2,1\n'+Array(20).fill('3,NaN\n').join('');
+  await page.locator('#file-import').setInputFiles({name:'nonfinite.csv',mimeType:'text/csv',buffer:Buffer.from(csv)});
+  await page.getByRole('button',{name:'Run health check',exact:true}).click();
+  await expect(page.getByLabel('Target column')).toBeVisible();
+  await page.getByLabel('Target column').selectOption('label');
+  await page.getByRole('button',{name:'Update health check'}).click();
+  const balance=page.locator('.finding-card').filter({has:page.getByRole('button',{name:/Class balance: label/})});
+  await balance.getByRole('button').click();
+  await expect(balance).toContainText('ratio is 1.00');
+  await expect(balance.locator('tbody tr')).toHaveCount(2);
+  await expect(balance.getByRole('cell',{name:'—',exact:true})).toHaveCount(0);
+  await page.getByText('Preview source records',{exact:true}).click();
+  await expect(page.getByRole('cell',{name:'Infinity',exact:true})).toBeVisible();
+  await expect(page.getByRole('cell',{name:'-Infinity',exact:true})).toBeVisible();
+});
+
 async function auditManyFindings(page: Page) {
   await openWorkbench(page);
   const names=[...Array.from({length:30},(_,i)=>`field_${String(i).padStart(2,'0')}`),'東京'];

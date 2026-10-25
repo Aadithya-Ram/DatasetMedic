@@ -32,7 +32,7 @@ def safe(value: Any) -> Any:
     if isinstance(value, (list, tuple)):
         return [safe(v) for v in value]
     if isinstance(value, float) and not math.isfinite(value):
-        return None
+        return None if math.isnan(value) else "Infinity" if value > 0 else "-Infinity"
     # JSON numbers are parsed as IEEE-754 doubles in browsers; preserve identifier evidence exactly.
     if isinstance(value, int) and abs(value) > 2**53 - 1:
         return str(value)

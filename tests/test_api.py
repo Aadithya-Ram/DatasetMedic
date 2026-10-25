@@ -67,6 +67,27 @@ def test_findings_filter_full_audit_before_pagination_and_preserve_snapshot(clie
     assert result_file.read_bytes() == original
 
 
+def test_nonfinite_evidence_is_strict_json_and_exports_keep_numeric_values(client):
+    base = create_session(client)
+    uploaded = client.post(base + "/imports", files={"file": ("special.csv", b"value,tag\ninf,a\n-inf,b\nNaN,c\n,d\n")}).json()
+    jid = client.post(base + "/jobs", json={"kind": "audit", "config": {"target": "value"}}).json()["id"]
+    assert wait(client, base, jid)["status"] == "complete"
+    result = client.get(f"{base}/jobs/{jid}/result").json()
+    assert [row["value"] for row in result["profiles"][uploaded["id"]]["sample"]] == ["Infinity", "-Infinity", None, None]
+    items = client.get(f"{base}/jobs/{jid}/findings").json()["items"]
+    balance = next(f for f in items if f["kind"] == "class_balance")
+    assert balance["count"] == 2
+    assert {row["label"] for row in balance["examples"]} == {"Infinity", "-Infinity"}
+    export = client.post(base + "/jobs", json={"kind": "export", "output_format": "parquet"}).json()["id"]
+    assert wait(client, base, export)["status"] == "complete"
+    with zipfile.ZipFile(io.BytesIO(client.get(f"{base}/jobs/{export}/download").content)) as bundle:
+        name = next(name for name in bundle.namelist() if name.endswith(".parquet"))
+        cleaned = pl.read_parquet(io.BytesIO(bundle.read(name)))["value"]
+        assert cleaned.to_list()[:2] == [float("inf"), float("-inf")]
+        assert cleaned.is_nan().to_list()[2] is True
+        assert cleaned.to_list()[3] is None
+
+
 def test_demo_audit_preview_export_and_reproduce(client, tmp_path):
     base = create_session(client)
     datasets = client.post(base + "/demo").json()
