@@ -179,6 +179,8 @@ New [wide-schema measurements](docs/benchmark.md#wider-schemas--october-21-2026)
 
 In v0.5.1, [row-position evidence sampling](docs/benchmark.md#evidence-sampling-improvement--october-22-2026) reduced median audit time from 32.91 to 17.88 seconds in a controlled 500-column fixture while preserving the example records. Results vary by data shape; this patch includes the improvement.
 
+On `main` for the next release, class counts and constant checks consistently exclude null/NaN values. Infinity evidence displays explicitly rather than as missing; exported numeric values stay unchanged. This corrects false imbalance reports when many target labels are NaN.
+
 ## Contributing
 
 Bug reports with a **small synthetic example** are especially useful. Please avoid posting private datasets or unredacted reports. For changes, include the expected behavior and relevant tests. See [CONTRIBUTING.md](CONTRIBUTING.md).

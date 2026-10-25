@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Exclude null/NaN targets from observed class counts; apply the same missingness policy to constant detection and profile examples.
+- Display numeric infinities explicitly as `Infinity`/`-Infinity` in JSON evidence instead of missing values. Numeric source/export values remain unchanged.
 - Store audit findings in indexed temporary records so summary/page requests do not decode all evidence. Preserve filtering, counts, order, legacy-result compatibility and atomic completion.
 
 ## 0.5.1 — October 23, 2026
