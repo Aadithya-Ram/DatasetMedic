@@ -105,7 +105,7 @@ def profile(df: pl.DataFrame) -> dict:
     for name, dtype in df.schema.items():
         s = df[name]
         item = {"name": name, "dtype": str(dtype), "missing": df.select(missing_expr(name, dtype).sum()).item(),
-                "unique": s.n_unique(), "examples": safe(s.drop_nulls().head(4).to_list())}
+                "unique": s.n_unique(), "examples": safe(observed_values(s).head(4).to_list())}
         if is_numeric(dtype):
             clean = s.filter(s.is_finite()) if dtype.is_float() else s
             item["stats"] = safe({"mean": clean.mean(), "median": clean.median(), "std": clean.std(),
@@ -137,8 +137,8 @@ def audit(frames: dict[str, pl.DataFrame], config: dict) -> dict:
             if col["missing"]:
                 add("missing", f"Missing values in {name}", "Null and NaN values may need an explicit handling strategy.",
                     [key], col["missing"], evidence(df, missing_expr(name, df.schema[name])), columns=[name])
-            if df[name].drop_nulls().n_unique() <= 1:
-                add("constant", f"Constant or empty column: {name}", "This column has at most one non-null value.",
+            if observed_values(df[name]).n_unique() <= 1:
+                add("constant", f"Constant or empty column: {name}", "This column has at most one non-missing value.",
                     [key], df.height, columns=[name], severity="info")
             if df.schema[name] == pl.String:
                 values = pl.col(name).str.strip_chars()

@@ -35,6 +35,22 @@ def test_missing_targets_do_not_invent_a_second_observed_class(labels):
     assert not any(f["kind"] == "class_balance" for f in result["findings"])
 
 
+def test_nan_constant_checks_and_profile_examples_follow_missingness_policy():
+    frame = pl.DataFrame({"one": [float("nan"), None, 7.0, 7.0],
+                          "empty": [float("nan"), None, float("nan"), None],
+                          "varying": [1.0, 2.0, None, float("nan")]})
+    result = audit({"data": frame}, {})
+    constant = {f["columns"][0] for f in result["findings"] if f["kind"] == "constant"}
+    assert constant == {"one", "empty"}
+    columns = {c["name"]: c for c in result["profiles"]["data"]["columns"]}
+    assert columns["one"]["examples"] == [7.0, 7.0]
+    assert columns["empty"]["examples"] == []
+    assert columns["varying"]["examples"] == [1.0, 2.0]
+    assert columns["one"]["missing"] == 2
+    # Distinct counts intentionally still include null and NaN representations.
+    assert columns["one"]["unique"] == frame["one"].n_unique()
+
+
 @pytest.mark.parametrize("mode", ["some", "all", "none", "nullable"])
 @pytest.mark.parametrize("rows", [0, 7, 40])
 def test_evidence_index_sampling_preserves_exact_records_order_and_originals(mode, rows):
