@@ -83,6 +83,12 @@ def missing_expr(name: str, dtype: pl.DataType) -> pl.Expr:
     return expr
 
 
+def observed_values(series: pl.Series) -> pl.Series:
+    """Exclude the same null/NaN values classified as missing by the audit."""
+    values = series.drop_nulls()
+    return values.drop_nans() if series.dtype.is_float() else values
+
+
 def evidence(df: pl.DataFrame, mask: pl.Expr) -> list[dict]:
     label = "source_row"
     while label in df.columns:
@@ -150,7 +156,7 @@ def audit(frames: dict[str, pl.DataFrame], config: dict) -> dict:
             add("duplicate", "Repeated records", "Count is extra copies beyond the first occurrence of each row.",
                 [key], extra, safe(df.filter(duplicates).head(12).to_dicts()))
         if target and target in df.columns:
-            values = df[target].drop_nulls()
+            values = observed_values(df[target])
             if 1 < values.n_unique() <= 100:
                 counts = values.value_counts(sort=True)
                 frequencies = [r[1] for r in counts.iter_rows()]

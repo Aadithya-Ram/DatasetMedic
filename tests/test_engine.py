@@ -15,6 +15,26 @@ from datasetmedic.engine import (
 )
 
 
+def test_nan_targets_do_not_create_a_class_or_false_imbalance():
+    frame = pl.DataFrame({"label": [0.0, 0.0, 1.0, 1.0] + [float("nan")] * 20 + [None]})
+    before = frame.clone()
+    result = audit({"train": frame}, {"target": "label"})
+    balance = next(f for f in result["findings"] if f["kind"] == "class_balance")
+    assert balance["count"] == 4
+    assert balance["severity"] == "info"
+    assert "1.00" in balance["detail"]
+    assert sorted(balance["examples"], key=lambda row: row["label"]) == [
+        {"label": 0.0, "count": 2}, {"label": 1.0, "count": 2}]
+    assert next(f for f in result["findings"] if f["kind"] == "missing")["count"] == 21
+    assert frame.equals(before)
+
+
+@pytest.mark.parametrize("labels", [[float("nan"), None], [1.0, float("nan"), None]])
+def test_missing_targets_do_not_invent_a_second_observed_class(labels):
+    result = audit({"train": pl.DataFrame({"label": labels})}, {"target": "label"})
+    assert not any(f["kind"] == "class_balance" for f in result["findings"])
+
+
 @pytest.mark.parametrize("mode", ["some", "all", "none", "nullable"])
 @pytest.mark.parametrize("rows", [0, 7, 40])
 def test_evidence_index_sampling_preserves_exact_records_order_and_originals(mode, rows):
