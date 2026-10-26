@@ -206,6 +206,27 @@ def test_job_exit_rechecks_terminal_files_before_reporting_a_crash(client, artif
 
 
 @pytest.mark.parametrize("kind", ["preview", "export"])
+def test_undefined_median_fails_job_and_preserves_import(client, kind):
+    base = create_session(client)
+    dataset = client.post(base + "/imports", files={"file": (
+        "source.csv", b"x,tag\n-inf,a\ninf,b\n,c\n")}).json()
+    recipe = {"steps": [{"op": "fill", "columns": ["x"], "method": "median"}]}
+    jid = client.post(base + "/jobs", json={"kind": kind, "recipe": recipe}).json()["id"]
+    status = wait(client, base, jid)
+    assert status["status"] == "failed"
+    assert status["error_step"] == 1
+    assert status["error_operation"] == "fill"
+    assert "no usable value" in status["error"]
+    assert client.get(f"{base}/jobs/{jid}/download").status_code == 409
+    assert client.get(f"{base}/jobs/{jid}/result").status_code == 409
+    audit_id = client.post(base + "/jobs", json={"kind": "audit"}).json()["id"]
+    assert wait(client, base, audit_id)["status"] == "complete"
+    profile = client.get(f"{base}/jobs/{audit_id}/result").json()["profiles"][dataset["id"]]
+    assert [row["x"] for row in profile["sample"]] == ["-Infinity", "Infinity", None]
+    assert profile["columns"][0]["missing"] == 1
+
+
+@pytest.mark.parametrize("kind", ["preview", "export"])
 def test_recipe_failure_metadata_and_original_import_survive(client, kind):
     base = create_session(client)
     dataset = client.post(base + "/imports", files={"file": ("source.csv", b"x,noise\n1,a\n2,b\n")}).json()

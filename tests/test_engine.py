@@ -221,6 +221,21 @@ def test_infinite_observed_replacement_remains_supported(method):
     assert summary["fitted_values"]["0"]["x"] == "Infinity"
 
 
+def test_invalid_training_median_stops_reproduction_without_writing_outputs(tmp_path):
+    train = tmp_path / "train.parquet"
+    test = tmp_path / "test.parquet"
+    pl.DataFrame({"x": [float("-inf"), float("inf"), None]}).write_parquet(train)
+    pl.DataFrame({"x": [42.0, None]}).write_parquet(test)
+    originals = [path.read_bytes() for path in (train, test)]
+    output = tmp_path / "cleaned"
+    with pytest.raises(RecipeError, match="no usable value"):
+        execute_recipe({"train": str(train), "test": str(test)}, {"steps": [
+            {"op": "fill", "columns": ["x"], "method": "median"}]},
+            {"train": "train", "test": "test"}, output)
+    assert not output.exists()
+    assert [path.read_bytes() for path in (train, test)] == originals
+
+
 def test_text_nan_constant_is_a_valid_observed_string():
     result, _ = transform({"a": pl.DataFrame({"x": ["a", None]})}, {"steps": [
         {"op": "fill", "columns": ["x"], "method": "constant", "value": "NaN"}]}, {})
