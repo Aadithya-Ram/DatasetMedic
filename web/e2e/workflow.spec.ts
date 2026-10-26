@@ -143,6 +143,26 @@ test('500-column profiles support filtered pagination and reset between datasets
   await expect(page.getByRole('columnheader',{name:'field_497',exact:true})).toHaveCount(1);
 });
 
+test('undefined median blocks export and can be repaired with mode',async({page})=>{
+  await openWorkbench(page);
+  await page.locator('#file-import').setInputFiles({name:'infinite.csv',mimeType:'text/csv',buffer:Buffer.from('value,tag\n-inf,a\ninf,b\n,c\n')});
+  await page.getByRole('button',{name:'Run health check',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Preview changes'})).toBeEnabled();
+  await page.getByLabel('What would you like to do?').selectOption('fill');
+  await page.locator('.builder-body').getByRole('button',{name:'value',exact:true}).click();
+  await page.getByRole('button',{name:'Add recipe step'}).click();
+  await page.getByRole('button',{name:'Preview changes'}).click();
+  await expect(page.getByRole('alert')).toContainText('Cannot fill value: the fitting data has no usable value.');
+  await expect(page.getByRole('button',{name:'Prepare export'})).toBeDisabled();
+  await page.getByRole('button',{name:'Edit step 1',exact:true}).click();
+  await page.getByLabel('Fill strategy').selectOption('mode');
+  await page.getByRole('button',{name:'Save step changes'}).click();
+  await page.getByRole('button',{name:'Preview changes'}).click();
+  await expect(page.getByText('Up to date',{exact:true})).toBeVisible();
+  await expect(page.getByRole('alert')).toHaveCount(0);
+  await expect(page.getByRole('button',{name:'Prepare export'})).toBeEnabled();
+});
+
 test('failed recipe preview identifies its step and opens that step for repair',async({page})=>{
   await page.setViewportSize({width:390,height:844});
   await openWorkbench(page);
