@@ -199,6 +199,34 @@ def test_empty_malformed(tmp_path, content):
         load_frame(p)
 
 
+@pytest.mark.parametrize("method,value", [("median", None), ("constant", float("nan")),
+                                          ("constant", "NaN")])
+def test_fill_rejects_missing_replacements(method, value):
+    source = pl.DataFrame({"x": [float("-inf"), float("inf"), None, float("nan")]})
+    original = source.clone()
+    with pytest.raises(RecipeError, match=r"Step 1 \(fill\): Cannot fill x") as caught:
+        transform({"train": source}, {"steps": [
+            {"op": "fill", "columns": ["x"], "method": method, "value": value}]}, {})
+    assert caught.value.step == 1
+    assert source.equals(original)
+
+
+@pytest.mark.parametrize("method", ["median", "mode"])
+def test_infinite_observed_replacement_remains_supported(method):
+    source = pl.DataFrame({"x": [float("inf"), float("inf"), None]})
+    result, summary = transform({"train": source}, {"steps": [
+        {"op": "fill", "columns": ["x"], "method": method}]}, {})
+    assert result["train"]["x"].to_list() == [float("inf")] * 3
+    assert summary["changes"][0]["affected_rows"] == 1
+    assert summary["fitted_values"]["0"]["x"] == "Infinity"
+
+
+def test_text_nan_constant_is_a_valid_observed_string():
+    result, _ = transform({"a": pl.DataFrame({"x": ["a", None]})}, {"steps": [
+        {"op": "fill", "columns": ["x"], "method": "constant", "value": "NaN"}]}, {})
+    assert result["a"]["x"].to_list() == ["a", "NaN"]
+
+
 def test_mode_is_deterministic_and_nan_is_missing():
     a = pl.DataFrame({"x": [float("nan"), 1.0, 3.0], "word": ["b", "a", None]})
     out, summary = transform({"a": a}, {"steps": [{"op": "fill", "columns": ["x"], "method": "median"},

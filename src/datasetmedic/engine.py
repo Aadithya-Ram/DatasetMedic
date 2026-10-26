@@ -259,7 +259,7 @@ def transform(frames: dict[str, pl.DataFrame], recipe: dict, roles: dict) -> tup
                         value = modes[0] if len(modes) else None
                     else:
                         value = step.get("value")
-                    if value is None:
+                    if value is None or (isinstance(value, float) and math.isnan(value)):
                         raise ValueError(f"Cannot fill {col}: the fitting data has no usable value.")
                     learned[col] = value
                 fitted[str(index)] = safe(learned)
@@ -315,6 +315,8 @@ def transform(frames: dict[str, pl.DataFrame], recipe: dict, roles: dict) -> tup
                                 typed = pl.Series([value]).cast(df.select(before).schema[col], strict=True)[0]
                             except (pl.exceptions.PolarsError, TypeError) as exc:
                                 raise ValueError(f"Fill value is incompatible with {col}. Convert the type first.") from exc
+                            if typed is None or (isinstance(typed, float) and math.isnan(typed)):
+                                raise ValueError(f"Cannot fill {col}: the replacement is missing after conversion.")
                             after = before.fill_null(typed)
                         else:
                             raise ValueError(f"Unknown cleaning operation: {op}")
