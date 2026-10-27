@@ -1,15 +1,16 @@
-# DatasetMedic 0.5.1
+# DatasetMedic 0.5.2
 
-A performance patch for finding evidence in wide datasets.
+More efficient finding pages and consistent missing-value handling.
 
 ## New in this release
 
-- Select the first 12 matching row positions before gathering evidence, avoiding copies of all matching wide rows.
-- Preserve exact example records, ordering, 1-based source row numbers, collision-safe labels and originals.
-- In three controlled pairs on a synthetic 500-column fixture, median audit time decreased from 32.91 to 17.88 seconds. This is fixture-specific; no universal speedup or substantial memory reduction is claimed.
-- Include equivalence tests and raw comparison results with reproducible worker code in the source archive.
+- Store findings as indexed temporary records; summary and page requests decode only the selected evidence. Preserve ordering, filters, counts and complete sampled records.
+- Exclude null/NaN targets from class counts and apply consistent missingness to constants and profile examples.
+- Show numeric infinities explicitly in evidence while preserving numeric source and exported values.
+- Reject null/NaN fill replacements, including undefined medians and numeric NaN constants after conversion. Failed previews and exports identify the recipe step; reproduction uses the same guard. Training-only fitting remains enforced.
+- Include storage benchmarks and regression coverage. A synthetic 29.59 MiB finding fixture used 3.83 MiB peak traced Python allocations for an indexed page read versus 79.43 MiB for the former inline read. This measures page-read allocations, not total application memory or audit construction.
 
-The interface, cleaning recipes and exported data semantics remain unchanged. All v0.5.0 features and earlier releases remain available.
+The responsive interface is unchanged. All earlier features and release assets remain available.
 
 ## Download and run
 

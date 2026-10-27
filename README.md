@@ -26,7 +26,7 @@ Open CSV or Parquet files, inspect the evidence, preview deliberate cleaning, an
 Requires **Python 3.11 or newer**. The downloadable wheel includes the built interface; Node is only needed for development.
 
 ```shell
-python -m pip install https://github.com/Aadithya-Ram/DatasetMedic/releases/download/v0.5.1/datasetmedic-0.5.1-py3-none-any.whl
+python -m pip install https://github.com/Aadithya-Ram/DatasetMedic/releases/download/v0.5.2/datasetmedic-0.5.2-py3-none-any.whl
 datasetmedic
 ```
 
@@ -72,7 +72,7 @@ Failed type conversions create null values and are counted in the preview. Expor
 
 ![Local import feedback](docs/images/import-progress.png)
 
-Screenshots show the v0.5.0 interface with synthetic data; v0.5.1 changes evidence-sampling performance. The import request was deliberately delayed to capture its progress state.
+Screenshots show the v0.5.0 interface with synthetic data; v0.5.1–0.5.2 change backend performance and correctness. The import request was deliberately delayed to capture its progress state.
 
 **New in v0.4.0:** split comparisons show missing percentages with counts and each dataset’s own row total. Named headers, explicit summaries and visible type differences help interpret unequal splits. Failed recipe previews identify the step and offer an edit shortcut. Job completion is rechecked before reporting an unexpected worker exit.
 
@@ -179,7 +179,7 @@ New [wide-schema measurements](docs/benchmark.md#wider-schemas--october-21-2026)
 
 In v0.5.1, [row-position evidence sampling](docs/benchmark.md#evidence-sampling-improvement--october-22-2026) reduced median audit time from 32.91 to 17.88 seconds in a controlled 500-column fixture while preserving the example records. Results vary by data shape; this patch includes the improvement.
 
-On `main` for the next release, class counts and constant checks consistently exclude null/NaN values. Infinity evidence displays explicitly rather than as missing; exported numeric values stay unchanged. This corrects false imbalance reports when many target labels are NaN.
+In v0.5.2, class counts and constant checks consistently exclude null/NaN values. Infinity evidence displays explicitly rather than as missing; exported numeric values stay unchanged. This corrects false imbalance reports when many target labels are NaN. Missing imputation replacements now fail with step context rather than reporting a successful fill. Indexed temporary findings let summary and page requests avoid decoding all example records; see the [measured scope and limits](docs/benchmark.md).
 
 ## Contributing
 
