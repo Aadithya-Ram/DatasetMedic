@@ -267,6 +267,45 @@ def test_reproduction_interface(tmp_path):
     assert source.read_text() == "x\n1\n1\n2\n"
 
 
+@pytest.mark.parametrize("output_format", ["csv", "parquet"])
+def test_reproduction_checks_later_source_collisions_before_any_write(tmp_path, output_format):
+    first = tmp_path / "original.parquet"
+    second = tmp_path / f"dataset-2.{output_format}"
+    pl.DataFrame({"x": [1]}).write_parquet(first)
+    frame = pl.DataFrame({"x": [2]})
+    if output_format == "csv":
+        frame.write_csv(second)
+    else:
+        frame.write_parquet(second)
+    earlier_output = tmp_path / f"dataset-1.{output_format}"
+    earlier_output.write_bytes(b"previous cleaned export")
+    originals = {p: p.read_bytes() for p in (first, second, earlier_output)}
+    with pytest.raises(ValueError, match="separate from source"):
+        execute_recipe({"first": str(first), "second": str(second)}, {}, {}, tmp_path,
+                       output_format=output_format)
+    assert {p: p.read_bytes() for p in originals} == originals
+
+
+def test_reproduction_rejects_hardlinked_source_alias(tmp_path):
+    source = tmp_path / "original.parquet"
+    pl.DataFrame({"x": [1, 1]}).write_parquet(source)
+    destination = tmp_path / "cleaned"
+    destination.mkdir()
+    alias = destination / "dataset-1.parquet"
+    alias.hardlink_to(source)
+    original = source.read_bytes()
+    with pytest.raises(ValueError, match="separate from source"):
+        execute_recipe({"source": str(source)}, {"steps": [{"op": "deduplicate"}]}, {}, destination)
+    assert source.read_bytes() == alias.read_bytes() == original
+
+
+def test_invalid_export_format_does_not_create_destination(tmp_path):
+    destination = tmp_path / "cleaned"
+    with pytest.raises(ValueError, match="Output format"):
+        execute_recipe({}, {}, {}, destination, output_format="invalid")
+    assert not destination.exists()
+
+
 def test_constant_string_and_date_conversion():
     frame = pl.DataFrame({"x": [None, "a"], "date": ["2026-01-01", "bad"]})
     out, summary = transform({"a": frame}, {"steps": [

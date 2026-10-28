@@ -343,17 +343,19 @@ def transform(frames: dict[str, pl.DataFrame], recipe: dict, roles: dict) -> tup
 def execute_recipe(inputs: dict[str, str], recipe: dict, roles: dict, output: str | Path,
                    options: dict | None = None, output_format: str = "parquet") -> dict:
     """Stable public reproduction interface; used unchanged by downloaded scripts."""
-    frames = {k: load_frame(p, (options or {}).get(k)) for k, p in inputs.items()}
-    cleaned, summary = transform(frames, recipe, roles)
-    destination = Path(output)
-    destination.mkdir(parents=True, exist_ok=True)
     if output_format not in ("csv", "parquet"):
         raise ValueError("Output format must be csv or parquet.")
-    for index, (key, frame) in enumerate(cleaned.items(), 1):
-        # Never use untrusted dataset names as file paths.
-        path = destination / f"dataset-{index}.{output_format}"
-        if any(path.resolve() == Path(p).resolve() for p in inputs.values()):
+    destination = Path(output)
+    # Check every generated path before loading, creating folders or writing data.
+    paths = [destination / f"dataset-{index}.{output_format}" for index in range(1, len(inputs) + 1)]
+    for path in paths:
+        if any(path.resolve() == Path(p).resolve() or
+               (path.exists() and path.samefile(p)) for p in inputs.values()):
             raise ValueError("Choose an output directory separate from source files.")
+    frames = {k: load_frame(p, (options or {}).get(k)) for k, p in inputs.items()}
+    cleaned, summary = transform(frames, recipe, roles)
+    destination.mkdir(parents=True, exist_ok=True)
+    for path, frame in zip(paths, cleaned.values(), strict=True):
         if output_format == "csv":
             frame.write_csv(path)
         else:
