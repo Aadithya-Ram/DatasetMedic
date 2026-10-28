@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Preflight all reproduction output paths before writing any file; reject resolved-path and hard-link aliases of original inputs, including collisions at later output positions. Invalid formats no longer create an output directory.
 ## 0.5.2 — October 27, 2026
 
 - Reject imputation replacements that are null/NaN, including undefined medians and numeric `NaN` constants after conversion. Failed previews/exports identify the recipe step instead of reporting missing cells as filled.
