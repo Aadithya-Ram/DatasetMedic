@@ -1,16 +1,15 @@
-# DatasetMedic 0.5.2
+# DatasetMedic 0.5.3
 
-More efficient finding pages and consistent missing-value handling.
+A reproduction-safety patch.
 
 ## New in this release
 
-- Store findings as indexed temporary records; summary and page requests decode only the selected evidence. Preserve ordering, filters, counts and complete sampled records.
-- Exclude null/NaN targets from class counts and apply consistent missingness to constants and profile examples.
-- Show numeric infinities explicitly in evidence while preserving numeric source and exported values.
-- Reject null/NaN fill replacements, including undefined medians and numeric NaN constants after conversion. Failed previews and exports identify the recipe step; reproduction uses the same guard. Training-only fitting remains enforced.
-- Include storage benchmarks and regression coverage. A synthetic 29.59 MiB finding fixture used 3.83 MiB peak traced Python allocations for an indexed page read versus 79.43 MiB for the former inline read. This measures page-read allocations, not total application memory or audit construction.
+- Check all generated output paths against every original input before creating directories or writing cleaned data.
+- Reject resolved aliases and existing hard links to source files, including collisions at later output positions. A rejected destination leaves earlier cleaned outputs untouched.
+- Reject invalid output formats before creating an output directory.
+- Include CSV/Parquet collision and hard-link preservation regressions.
 
-The responsive interface is unchanged. All earlier features and release assets remain available.
+The interface and transformation results for valid destinations are unchanged. This preflight does not make writes transactional or protect against another process changing links after validation; use a separate output directory without concurrent writers. Earlier release assets remain available.
 
 ## Download and run
 

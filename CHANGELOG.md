@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.5.3 — release candidate
+
 - Preflight all reproduction output paths before writing any file; reject resolved-path and hard-link aliases of original inputs, including collisions at later output positions. Invalid formats no longer create an output directory.
 ## 0.5.2 — October 27, 2026
 
